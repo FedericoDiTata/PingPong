@@ -1,5 +1,6 @@
 /**
- * Set de iconos propio. Trazo 1.6, puntas redondeadas, grilla de 24.
+ * Set de iconos propio. Trazo grueso (2.2) para que peguen con los bordes
+ * de 3px del resto de la interfaz, puntas redondeadas, grilla de 24.
  * Dibujarlos a mano cuesta veinte minutos y evita el look de librería
  * genérica que tienen todas las apps iguales.
  */
@@ -11,7 +12,7 @@ function Base({ children, ...props }: Props & { children: React.ReactNode }) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.6}
+      strokeWidth={2.2}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

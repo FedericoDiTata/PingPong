@@ -1,128 +1,101 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   MESA — sistema de diseño
-   Referencia material: la mesa reglamentaria (azul profundo), las líneas de
-   tiza blancas, la red, y la pelota de celuloide naranja como único acento.
+   MESA — sistema visual
+   Referencia: el cartel pintado a mano de un club de barrio. Azul de mesa,
+   naranja de pelota, papel crema, bordes gruesos y sombras duras. Nada de
+   degradados suaves ni superficies pulidas: esto tiene que verse hecho a mano.
    ========================================================================== */
 
 @theme {
-  /* --- Superficies: azul mesa, del más profundo al más elevado --- */
-  --color-mesa-950: oklch(0.145 0.028 252);
-  --color-mesa-900: oklch(0.185 0.036 251);
-  --color-mesa-850: oklch(0.212 0.038 251);
-  --color-mesa-800: oklch(0.245 0.038 250);
-  --color-mesa-700: oklch(0.302 0.034 250);
-  --color-mesa-600: oklch(0.378 0.03 250);
+  /* --- Azules: del fondo profundo al detalle vivo --- */
+  --color-azul-950: oklch(0.205 0.095 265);
+  --color-azul-900: oklch(0.275 0.125 263);
+  --color-azul-800: oklch(0.34 0.145 261);
+  --color-azul-700: oklch(0.425 0.165 259);
+  --color-azul-500: oklch(0.6 0.175 254);
 
-  /* --- Tiza: jerarquía de texto --- */
-  --color-tiza: oklch(0.965 0.006 250);
-  --color-tiza-70: oklch(0.775 0.014 250);
-  --color-tiza-45: oklch(0.625 0.018 250);
-  --color-tiza-25: oklch(0.555 0.02 250);
+  /* --- Naranjas: la pelota --- */
+  --color-naranja: oklch(0.725 0.2 47);
+  --color-naranja-hondo: oklch(0.63 0.205 40);
+  --color-naranja-claro: oklch(0.84 0.148 66);
 
-  /* --- Pelota: acento único --- */
-  --color-pelota: oklch(0.785 0.166 62);
-  --color-pelota-alta: oklch(0.86 0.14 68);
-  --color-pelota-baja: oklch(0.62 0.15 55);
-
-  /* --- Semánticos --- */
-  --color-gana: oklch(0.805 0.135 158);
-  --color-pierde: oklch(0.665 0.163 24);
+  /* --- Papel --- */
+  --color-crema: oklch(0.955 0.03 84);
+  --color-hueso: oklch(0.885 0.042 82);
+  --color-tinta: oklch(0.175 0.06 266);
 
   /* --- Tipografía --- */
-  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+  --font-display: var(--font-anton), "Arial Narrow", sans-serif;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
 
   --text-2xs: 0.6875rem;
   --text-2xs--line-height: 1rem;
-  --text-xs: 0.75rem;
-  --text-xs--line-height: 1.05rem;
-  --text-sm: 0.8125rem;
-  --text-sm--line-height: 1.25rem;
-  --text-base: 0.9375rem;
-  --text-base--line-height: 1.5rem;
-  --text-lg: 1.0625rem;
-  --text-lg--line-height: 1.6rem;
-  --text-xl: 1.3125rem;
-  --text-xl--line-height: 1.7rem;
-  --text-2xl: 1.625rem;
-  --text-2xl--line-height: 1.9rem;
-  --text-3xl: 2.125rem;
-  --text-3xl--line-height: 2.25rem;
-  --text-4xl: 2.75rem;
-  --text-4xl--line-height: 2.75rem;
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.15rem;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.4rem;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.6rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.625rem;
+  --text-xl--line-height: 1.8rem;
+  --text-2xl: 2.125rem;
+  --text-2xl--line-height: 2.1rem;
+  --text-3xl: 2.875rem;
+  --text-3xl--line-height: 2.7rem;
+  --text-4xl: 3.75rem;
+  --text-4xl--line-height: 3.4rem;
+  --text-5xl: 5rem;
+  --text-5xl--line-height: 4.4rem;
 
-  /* --- Radios: escala corta y deliberada --- */
-  --radius-xs: 4px;
-  --radius-sm: 7px;
-  --radius-md: 11px;
+  --radius-sm: 5px;
+  --radius-md: 10px;
   --radius-lg: 16px;
-  --radius-xl: 22px;
+  --radius-xl: 26px;
 
-  /* --- Curvas: exponenciales, sin rebote --- */
+  /* --- Curvas: acá sí queremos que rebote --- */
+  --ease-salto: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-quint: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
-  --ease-in-quart: cubic-bezier(0.5, 0, 0.75, 0);
 
-  /* --- Duraciones --- */
-  --animate-hairline: hairline 1.6s var(--ease-inout) infinite;
-  --animate-latido: latido 2.4s var(--ease-inout) infinite;
-  --animate-brillo: brillo 1.4s linear infinite;
+  --animate-tiembla: tiembla 0.5s var(--ease-quart) infinite;
+  --animate-late: late 1.6s var(--ease-quart) infinite;
+  --animate-cinta: cinta 22s linear infinite;
 }
 
 :root {
   color-scheme: dark;
 
-  /* Bordes: hairlines de tiza, no grises muertos */
-  --borde: color-mix(in oklch, var(--color-tiza) 9%, transparent);
-  --borde-fuerte: color-mix(in oklch, var(--color-tiza) 16%, transparent);
-  --borde-pelota: color-mix(in oklch, var(--color-pelota) 38%, transparent);
-
-  /* Realce interno: simula luz cenital sobre la superficie */
-  --realce: inset 0 1px 0 0 color-mix(in oklch, var(--color-tiza) 7%, transparent);
-  --sombra-baja: 0 1px 2px oklch(0.12 0.03 252 / 0.5);
-  --sombra-media: 0 8px 24px -8px oklch(0.1 0.03 252 / 0.7);
-  --sombra-alta: 0 24px 60px -20px oklch(0.08 0.03 252 / 0.85);
-}
-
-* {
-  border-color: var(--borde);
+  --linea: 3px;
+  --golpe: 5px 5px 0 0 var(--color-tinta);
+  --golpe-chico: 3px 3px 0 0 var(--color-tinta);
+  --golpe-grande: 9px 9px 0 0 var(--color-tinta);
+  --golpe-naranja: 5px 5px 0 0 var(--color-naranja);
 }
 
 html {
   -webkit-tap-highlight-color: transparent;
-  scroll-behavior: smooth;
 }
 
 body {
-  background-color: var(--color-mesa-950);
-  color: var(--color-tiza);
+  background-color: var(--color-azul-900);
+  color: var(--color-crema);
   font-family: var(--font-sans);
   font-synthesis-weight: none;
-  text-rendering: optimizeLegibility;
   overscroll-behavior-y: none;
-}
-
-/* Números siempre tabulares: los marcadores no deben saltar al cambiar */
-.tnum,
-input[type="number"],
-.font-mono {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
+  overflow-x: hidden;
 }
 
 ::selection {
-  background-color: var(--color-pelota);
-  color: var(--color-mesa-950);
+  background-color: var(--color-naranja);
+  color: var(--color-tinta);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-pelota);
-  outline-offset: 2px;
-  border-radius: 3px;
+  outline: 3px solid var(--color-naranja);
+  outline-offset: 3px;
 }
 
 button,
@@ -140,7 +113,6 @@ textarea {
   font-family: inherit;
 }
 
-/* Saca las flechitas del number input: en el marcador estorban */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -151,35 +123,59 @@ input[type="number"] {
 }
 
 /* ==========================================================================
-   Utilidades del sistema
+   Utilidades
    ========================================================================== */
 
-@utility etiqueta {
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  line-height: 1;
-  letter-spacing: 0.14em;
+/** Titular: Anton en mayúsculas, bien apretado. Es la voz de la app. */
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 400;
   text-transform: uppercase;
-  color: var(--color-tiza-45);
+  letter-spacing: -0.015em;
+  line-height: 0.88;
 }
 
-@utility panel {
-  background-color: var(--color-mesa-900);
-  border: 1px solid var(--borde);
-  box-shadow: var(--realce), var(--sombra-baja);
+/** Etiqueta chica: la letra pequeña de los carteles. */
+@utility rotulo {
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1;
 }
 
-@utility linea-tiza {
-  background-image: linear-gradient(
-    to right,
-    transparent,
-    color-mix(in oklch, var(--color-tiza) 18%, transparent) 20%,
-    color-mix(in oklch, var(--color-tiza) 18%, transparent) 80%,
-    transparent
+/** Bloque de papel: borde grueso y sombra dura, sin difuminar. */
+@utility cartel {
+  background-color: var(--color-crema);
+  color: var(--color-tinta);
+  border: var(--linea) solid var(--color-tinta);
+  box-shadow: var(--golpe);
+}
+
+@utility cartel-azul {
+  background-color: var(--color-azul-800);
+  color: var(--color-crema);
+  border: var(--linea) solid var(--color-tinta);
+  box-shadow: var(--golpe);
+}
+
+@utility cartel-naranja {
+  background-color: var(--color-naranja);
+  color: var(--color-tinta);
+  border: var(--linea) solid var(--color-tinta);
+  box-shadow: var(--golpe);
+}
+
+/** Trama de puntos: la textura de impresión que saca el look de pantalla. */
+@utility trama {
+  background-image: radial-gradient(
+    color-mix(in oklch, var(--color-tinta) 30%, transparent) 1.1px,
+    transparent 1.2px
   );
+  background-size: 9px 9px;
 }
 
-/* Grano fino sobre toda la app: mata el look plano de gradiente digital */
 @utility grano {
   position: relative;
 }
@@ -188,34 +184,41 @@ input[type="number"] {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.028;
+  opacity: 0.05;
   mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* ==========================================================================
    Keyframes
    ========================================================================== */
 
-@keyframes hairline {
+@keyframes tiembla {
   0%,
   100% {
-    opacity: 0.25;
+    transform: rotate(-1.4deg);
   }
   50% {
-    opacity: 0.9;
+    transform: rotate(1.4deg);
   }
 }
 
-@keyframes latido {
+@keyframes late {
   0%,
   100% {
     transform: scale(1);
-    opacity: 0.5;
   }
   50% {
-    transform: scale(1.9);
-    opacity: 0;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes cinta {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
   }
 }
 
@@ -232,11 +235,11 @@ input[type="number"] {
   background-image: linear-gradient(
     100deg,
     transparent 20%,
-    color-mix(in oklch, var(--color-tiza) 6%, transparent) 45%,
+    color-mix(in oklch, var(--color-crema) 12%, transparent) 45%,
     transparent 70%
   );
   background-size: 240% 100%;
-  animation: var(--animate-brillo);
+  animation: brillo 1.4s linear infinite;
 }
 
 /* ==========================================================================
@@ -244,9 +247,6 @@ input[type="number"] {
    ========================================================================== */
 
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
   *,
   *::before,
   *::after {

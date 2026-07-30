@@ -2,33 +2,36 @@
 
 import { motion } from "motion/react";
 import { useId, useState } from "react";
+import { golpe } from "@/lib/motion";
 
 /* ---------------------------------------------------------------- Botón --- */
 
-type VarianteBoton = "primario" | "secundario" | "fantasma" | "peligro";
-type TamanoBoton = "sm" | "md" | "lg";
+type VarianteBoton = "naranja" | "crema" | "azul" | "fantasma" | "peligro";
+type TamanoBoton = "sm" | "md" | "lg" | "xl";
 
-// El deshabilitado del botón primario no es "el mismo naranja más apagado":
-// eso da un marrón sucio que sigue pareciendo pulsable. Pasa a ser una
-// superficie neutra, que es lo que un control inerte tiene que parecer.
+// Un botón apagado no es "el mismo color más transparente": eso sigue
+// pareciendo apretable. Pasa a ser un bloque hundido, sin sombra.
+const APAGADO = "disabled:bg-azul-950 disabled:text-crema/35 disabled:border-tinta disabled:shadow-none";
+
 const VARIANTES: Record<VarianteBoton, string> = {
-  primario:
-    "bg-pelota text-mesa-950 font-semibold hover:bg-pelota-alta active:bg-pelota-baja shadow-[0_1px_0_0_oklch(1_0_0/0.25)_inset] disabled:bg-mesa-800 disabled:text-tiza-25 disabled:shadow-none",
-  secundario:
-    "bg-mesa-800 text-tiza border border-[var(--borde-fuerte)] hover:bg-mesa-700 active:bg-mesa-800 disabled:opacity-45",
-  fantasma: "text-tiza-70 hover:text-tiza hover:bg-mesa-800/70 active:bg-mesa-800 disabled:opacity-45",
+  naranja: `bg-naranja text-tinta border-tinta shadow-[var(--golpe)] hover:bg-naranja-claro ${APAGADO}`,
+  crema: `bg-crema text-tinta border-tinta shadow-[var(--golpe)] hover:bg-hueso ${APAGADO}`,
+  azul: `bg-azul-700 text-crema border-tinta shadow-[var(--golpe)] hover:bg-azul-500 ${APAGADO}`,
+  fantasma:
+    "bg-transparent text-crema border-crema/35 hover:border-crema hover:bg-crema/10 disabled:opacity-40",
   peligro:
-    "text-pierde border border-transparent hover:bg-pierde/12 hover:border-pierde/30 disabled:opacity-45",
+    "bg-transparent text-naranja-claro border-naranja/50 hover:bg-naranja/15 disabled:opacity-40",
 };
 
 const TAMANOS: Record<TamanoBoton, string> = {
-  sm: "h-8 px-3 text-xs rounded-sm gap-1.5",
-  md: "h-10 px-4 text-sm rounded-md gap-2",
-  lg: "h-13 px-6 text-base rounded-md gap-2.5",
+  sm: "h-9 px-3 text-2xs gap-1.5 rounded-sm",
+  md: "h-11 px-4 text-xs gap-2 rounded-md",
+  lg: "h-14 px-6 text-sm gap-2.5 rounded-md",
+  xl: "h-20 px-8 text-lg gap-3 rounded-lg",
 };
 
 export function Boton({
-  variante = "secundario",
+  variante = "crema",
   tamano = "md",
   className = "",
   ...props
@@ -36,9 +39,13 @@ export function Boton({
   variante?: VarianteBoton;
   tamano?: TamanoBoton;
 }) {
+  const conSombra = variante !== "fantasma" && variante !== "peligro";
+
   return (
     <button
-      className={`inline-flex select-none items-center justify-center whitespace-nowrap transition-[background-color,color,border-color,transform] duration-[120ms] ease-quart active:scale-[0.985] disabled:pointer-events-none ${VARIANTES[variante]} ${TAMANOS[tamano]} ${className}`}
+      className={`inline-flex select-none items-center justify-center whitespace-nowrap border-[3px] font-bold uppercase tracking-[0.08em] transition-[transform,box-shadow,background-color,border-color] duration-100 ease-quart disabled:pointer-events-none ${
+        conSombra ? "active:translate-x-[4px] active:translate-y-[4px] active:shadow-none" : ""
+      } ${VARIANTES[variante]} ${TAMANOS[tamano]} ${className}`}
       {...props}
     />
   );
@@ -48,33 +55,22 @@ export function Boton({
 
 export function Campo({
   etiqueta,
-  sufijo,
   className = "",
   ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & {
-  etiqueta?: string;
-  sufijo?: React.ReactNode;
-}) {
+}: React.InputHTMLAttributes<HTMLInputElement> & { etiqueta?: string }) {
   const id = useId();
   return (
     <div className="flex flex-col gap-2">
       {etiqueta ? (
-        <label htmlFor={id} className="etiqueta">
+        <label htmlFor={id} className="rotulo text-crema/70">
           {etiqueta}
         </label>
       ) : null}
-      <div className="relative">
-        <input
-          id={id}
-          className={`h-11 w-full rounded-md border border-[var(--borde)] bg-mesa-850 px-3.5 text-base text-tiza outline-none transition-colors duration-[120ms] placeholder:text-tiza-25 hover:border-[var(--borde-fuerte)] focus:border-pelota/60 focus:bg-mesa-800 ${className}`}
-          {...props}
-        />
-        {sufijo ? (
-          <span className="absolute inset-y-0 right-3 flex items-center text-xs text-tiza-45">
-            {sufijo}
-          </span>
-        ) : null}
-      </div>
+      <input
+        id={id}
+        className={`h-13 w-full rounded-md border-[3px] border-tinta bg-crema px-4 text-lg font-semibold text-tinta shadow-[var(--golpe-chico)] outline-none transition-colors duration-100 placeholder:font-normal placeholder:text-tinta/35 focus:bg-naranja-claro ${className}`}
+        {...props}
+      />
     </div>
   );
 }
@@ -88,7 +84,7 @@ export function Segmentado<T extends string>({
   idGrupo,
   className = "",
 }: {
-  opciones: Array<{ valor: T; texto: string; icono?: React.ReactNode }>;
+  opciones: Array<{ valor: T; texto: string }>;
   valor: T;
   onCambio: (valor: T) => void;
   idGrupo: string;
@@ -97,7 +93,7 @@ export function Segmentado<T extends string>({
   return (
     <div
       role="tablist"
-      className={`inline-flex rounded-md border border-[var(--borde)] bg-mesa-900 p-1 ${className}`}
+      className={`inline-flex gap-1 rounded-md border-[3px] border-tinta bg-azul-950 p-1 shadow-[var(--golpe-chico)] ${className}`}
     >
       {opciones.map((opcion) => {
         const activo = opcion.valor === valor;
@@ -107,21 +103,18 @@ export function Segmentado<T extends string>({
             role="tab"
             aria-selected={activo}
             onClick={() => onCambio(opcion.valor)}
-            className={`relative inline-flex flex-1 items-center justify-center gap-1.5 rounded-sm px-3.5 py-2 text-sm transition-colors duration-[120ms] ${
-              activo ? "text-mesa-950" : "text-tiza-45 hover:text-tiza-70"
+            className={`relative flex-1 rounded-sm px-3.5 py-2.5 text-2xs font-bold uppercase tracking-[0.1em] transition-colors duration-100 ${
+              activo ? "text-tinta" : "text-crema/55 hover:text-crema"
             }`}
           >
             {activo ? (
               <motion.span
                 layoutId={`segmento-${idGrupo}`}
-                className="absolute inset-0 rounded-sm bg-tiza"
-                transition={{ type: "spring", stiffness: 520, damping: 42 }}
+                className="absolute inset-0 rounded-sm bg-naranja"
+                transition={{ type: "spring", stiffness: 520, damping: 32 }}
               />
             ) : null}
-            <span className="relative z-10 flex items-center gap-1.5 font-medium">
-              {opcion.icono}
-              {opcion.texto}
-            </span>
+            <span className="relative">{opcion.texto}</span>
           </button>
         );
       })}
@@ -132,31 +125,63 @@ export function Segmentado<T extends string>({
 /* ------------------------------------------------------------- Secciones --- */
 
 export function TituloSeccion({
-  etiqueta,
+  rotulo,
   titulo,
   accion,
 }: {
-  etiqueta?: string;
+  rotulo?: string;
   titulo: string;
   accion?: React.ReactNode;
 }) {
   return (
-    <div className="mb-4 flex items-end justify-between gap-4">
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div className="flex flex-col gap-2">
-        {etiqueta ? <span className="etiqueta">{etiqueta}</span> : null}
-        <h2 className="text-xl font-semibold tracking-[-0.01em] text-tiza">{titulo}</h2>
+        {rotulo ? (
+          <span className="rotulo w-fit -rotate-1 bg-naranja px-2 py-1 text-tinta">{rotulo}</span>
+        ) : null}
+        <h2 className="display text-2xl text-crema md:text-3xl">{titulo}</h2>
       </div>
       {accion}
     </div>
   );
 }
 
+/**
+ * Cinta corrida: el zócalo de un club. Decorativa, pero con contenido real.
+ * Duplica la lista para que el loop no tenga costura visible.
+ */
+export function Cinta({ items, className = "" }: { items: string[]; className?: string }) {
+  if (items.length === 0) return null;
+
+  // Con pocos resultados la cinta quedaría corta y se vería el hueco.
+  const relleno: string[] = [];
+  while (relleno.length < 8) relleno.push(...items);
+
+  return (
+    <div
+      aria-hidden
+      className={`overflow-hidden border-y-[3px] border-tinta bg-naranja py-2 ${className}`}
+    >
+      <div className="flex w-max animate-cinta">
+        {[0, 1].map((copia) => (
+          <div key={copia} className="flex shrink-0">
+            {relleno.map((parte, indice) => (
+              <span
+                key={`${copia}-${indice}`}
+                className="display whitespace-nowrap px-4 text-lg text-tinta"
+              >
+                {parte} <span className="text-tinta/40">●</span>
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* -------------------------------------------------------------- Confirmar --- */
 
-/**
- * Confirmación en línea: el propio control se convierte en la pregunta.
- * Un modal para "¿borrar este partido?" es artillería pesada de más.
- */
 export function ConfirmarEnLinea({
   children,
   pregunta = "¿Seguro?",
@@ -174,16 +199,15 @@ export function ConfirmarEnLinea({
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.18, ease: [0.25, 1, 0.5, 1] }}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={golpe}
       className="flex items-center gap-2"
     >
-      <span className="text-xs text-tiza-45">{pregunta}</span>
+      <span className="rotulo text-tinta/60">{pregunta}</span>
       <Boton
         tamano="sm"
-        variante="peligro"
-        className="border-pierde/40 bg-pierde/12"
+        variante="naranja"
         onClick={() => {
           setAbierto(false);
           onConfirmar();
@@ -204,21 +228,24 @@ export function EstadoVacio({
   titulo,
   detalle,
   accion,
-  icono,
 }: {
   titulo: string;
   detalle: string;
   accion?: React.ReactNode;
-  icono?: React.ReactNode;
 }) {
   return (
-    <div className="panel relative overflow-hidden rounded-lg px-6 py-14 text-center">
-      <div className="relative mx-auto flex max-w-sm flex-col items-center gap-4">
-        {icono ? <div className="text-tiza-25">{icono}</div> : null}
-        <h3 className="text-lg font-semibold text-tiza">{titulo}</h3>
-        <p className="text-sm leading-relaxed text-tiza-45">{detalle}</p>
-        {accion ? <div className="mt-2 flex flex-wrap justify-center gap-2">{accion}</div> : null}
+    <motion.div
+      initial={{ opacity: 0, y: 24, rotate: -2 }}
+      animate={{ opacity: 1, y: 0, rotate: -1 }}
+      transition={golpe}
+      className="cartel rounded-lg px-6 py-12 text-center"
+    >
+      <div className="mx-auto flex max-w-md flex-col items-center gap-4">
+        <span className="text-5xl">🏓</span>
+        <h3 className="display text-3xl text-tinta">{titulo}</h3>
+        <p className="max-w-[42ch] text-sm font-medium leading-relaxed text-tinta/70">{detalle}</p>
+        {accion ? <div className="mt-2 flex flex-wrap justify-center gap-3">{accion}</div> : null}
       </div>
-    </div>
+    </motion.div>
   );
 }

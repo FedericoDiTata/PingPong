@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { motion } from "motion/react";
@@ -6,59 +6,63 @@ import { Avatar } from "./Avatar";
 import { Forma } from "./Forma";
 import { NumeroRodante } from "./NumeroRodante";
 import { IconoFuego } from "./Iconos";
-import { tonoJugador } from "@/lib/color";
+import { escalonar, golpe, resorte, resorteFirme } from "@/lib/motion";
 import type { FilaTabla } from "@/lib/liga";
 
 /* ---------------------------------------------------------------- Podio --- */
 
-const ALTURAS = ["h-[104px] md:h-[132px]", "h-[78px] md:h-[100px]", "h-[62px] md:h-[80px]"];
+const ESCALONES = [
+  { alto: "h-32 md:h-44", fondo: "bg-naranja", texto: "text-tinta" },
+  { alto: "h-24 md:h-32", fondo: "bg-crema", texto: "text-tinta" },
+  { alto: "h-20 md:h-26", fondo: "bg-azul-700", texto: "text-crema" },
+];
 
 function Escalon({ fila, puesto }: { fila: FilaTabla; puesto: number }) {
-  const tono = tonoJugador(fila.jugador.id);
+  const estilo = ESCALONES[puesto - 1];
   const lider = puesto === 1;
 
   return (
-    <div className="flex min-w-0 max-w-[164px] flex-1 flex-col items-center gap-3">
+    <div className="flex min-w-0 max-w-[190px] flex-1 flex-col items-center gap-3">
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.22 + puesto * 0.06, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0, y: -30, scale: 0.5, rotate: -12 }}
+        animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+        transition={{ ...resorte, delay: 0.15 + puesto * 0.09 }}
         className="flex min-w-0 flex-col items-center gap-2"
       >
         <Avatar jugador={fila.jugador} tamano={lider ? "lg" : "md"} />
         <Link
           href={`/jugador/${fila.jugador.id}`}
-          className={`max-w-full truncate px-1 text-center transition-colors duration-[120ms] hover:text-pelota ${
-            lider ? "text-base font-semibold text-tiza" : "text-sm text-tiza-70"
+          className={`display max-w-full truncate px-1 text-center leading-none text-crema hover:text-naranja ${
+            lider ? "text-xl md:text-2xl" : "text-base md:text-lg"
           }`}
         >
           {fila.jugador.nombre}
         </Link>
-        <span className="font-mono text-xs tabular-nums text-tiza-45">{fila.elo}</span>
+        <span className="rotulo text-crema/55">{fila.pg}G · {fila.pp}P</span>
       </motion.div>
 
       <motion.div
         initial={{ scaleY: 0 }}
         animate={{ scaleY: 1 }}
-        transition={{ duration: 0.55, delay: puesto * 0.07, ease: [0.16, 1, 0.3, 1] }}
-        style={{
-          transformOrigin: "bottom",
-          backgroundColor: lider ? "oklch(0.3 0.062 62)" : "var(--color-mesa-850)",
-          borderColor: lider ? "var(--borde-pelota)" : "var(--borde)",
-          boxShadow: lider ? "0 0 32px -12px var(--color-pelota)" : undefined,
-        }}
-        className={`relative flex w-full items-end justify-center rounded-t-md border border-b-0 ${ALTURAS[puesto - 1]}`}
+        transition={{ type: "spring", stiffness: 260, damping: 18, delay: puesto * 0.08 }}
+        style={{ transformOrigin: "bottom" }}
+        className={`relative flex w-full flex-col items-center justify-center gap-1 rounded-t-lg border-[3px] border-b-0 border-tinta ${estilo.alto} ${estilo.fondo}`}
       >
-        <span
-          className={`pb-2 font-mono text-2xl tabular-nums ${lider ? "text-pelota" : "text-tiza-25"}`}
-        >
-          {puesto}
-        </span>
-        <span
-          aria-hidden
-          className="absolute inset-x-0 top-0 h-px"
-          style={{ backgroundColor: lider ? tono.borde : "var(--borde-fuerte)" }}
-        />
+        {lider ? (
+          // El cartelito se hamaca solo: la corona nunca se queda quieta.
+          <span className="animate-tiembla">
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ ...golpe, delay: 0.5 }}
+              className="display block rounded-sm border-2 border-tinta bg-crema px-2 py-0.5 text-xs text-tinta"
+            >
+              Rey de la mesa
+            </motion.span>
+          </span>
+        ) : null}
+        <span className={`display text-4xl md:text-5xl ${estilo.texto}`}>{puesto}</span>
+        <span className={`rotulo ${estilo.texto} opacity-70`}>{fila.elo}</span>
       </motion.div>
     </div>
   );
@@ -68,17 +72,16 @@ export function Podio({ tabla }: { tabla: FilaTabla[] }) {
   const podio = tabla.slice(0, 3);
   if (podio.length === 0) return null;
 
-  // 2º a la izquierda, 1º al centro, 3º a la derecha.
   const orden = [podio[1], podio[0], podio[2]].filter(Boolean);
 
   return (
-    <section aria-label="Podio" className="mb-10">
+    <section aria-label="Podio" className="mb-12">
       <div className="flex items-end justify-center gap-2 md:gap-4">
         {orden.map((fila) => (
           <Escalon key={fila.jugador.id} fila={fila} puesto={fila.puesto} />
         ))}
       </div>
-      <div className="h-px linea-tiza" />
+      <div className="h-[3px] w-full bg-tinta" />
     </section>
   );
 }
@@ -86,19 +89,17 @@ export function Podio({ tabla }: { tabla: FilaTabla[] }) {
 /* --------------------------------------------------------------- Tabla --- */
 
 function Movimiento({ delta }: { delta: number }) {
-  if (delta === 0) {
-    return (
-      <span aria-hidden className="block h-1 w-1 rounded-full bg-tiza-25/60" title="Sin cambios" />
-    );
-  }
+  if (delta === 0) return null;
 
   const sube = delta > 0;
   return (
     <motion.span
-      initial={{ opacity: 0, y: sube ? 4 : -4 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className={`flex items-center gap-0.5 font-mono text-2xs ${sube ? "text-gana" : "text-pierde"}`}
+      initial={{ opacity: 0, y: sube ? 8 : -8, scale: 0.5 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={golpe}
+      className={`flex items-center gap-0.5 rounded-[3px] border-2 border-tinta px-1 py-0.5 text-[10px] font-black ${
+        sube ? "bg-naranja text-tinta" : "bg-azul-800 text-crema"
+      }`}
       title={sube ? `Subió ${delta} puesto(s)` : `Bajó ${Math.abs(delta)} puesto(s)`}
     >
       <svg viewBox="0 0 8 6" className="size-1.5" fill="currentColor" aria-hidden>
@@ -109,82 +110,66 @@ function Movimiento({ delta }: { delta: number }) {
   );
 }
 
-function Fila({ fila, maximo, minimo }: { fila: FilaTabla; maximo: number; minimo: number }) {
-  const tono = tonoJugador(fila.jugador.id);
-  const rango = Math.max(maximo - minimo, 1);
-  const fuerza = 0.18 + ((fila.elo - minimo) / rango) * 0.82;
+function Fila({ fila, indice }: { fila: FilaTabla; indice: number }) {
+  const lider = fila.puesto === 1;
 
   return (
     <motion.li
       layout
-      transition={{ type: "spring", stiffness: 420, damping: 42 }}
-      className="relative"
+      initial={{ opacity: 0, x: -28, scale: 0.96 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      transition={{ ...resorteFirme, delay: escalonar(indice, 0.04) }}
     >
-      <Link
-        href={`/jugador/${fila.jugador.id}`}
-        className="group relative flex items-center gap-3 overflow-hidden rounded-md border border-transparent px-3 py-3 transition-colors duration-150 hover:border-[var(--borde)] hover:bg-mesa-900 md:gap-4 md:px-4"
-      >
-        {/* Barra de fuerza relativa: el ranking se lee sin comparar números.
-            El degradado evita el corte duro y el radio deformado por el escalado. */}
-        <motion.span
-          aria-hidden
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: fuerza }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-y-0 left-0 w-full origin-left"
-          style={{
-            backgroundImage: `linear-gradient(to right, ${tono.tenue}, ${tono.tenue} 45%, transparent)`,
-          }}
-        />
-
-        <div className="relative flex w-7 flex-col items-center gap-1">
+      <Link href={`/jugador/${fila.jugador.id}`} className="block">
+        <motion.div
+          whileHover={{ y: -4, rotate: -0.6 }}
+          whileTap={{ scale: 0.985 }}
+          transition={resorte}
+          className="cartel flex items-center gap-3 rounded-md px-2.5 py-2.5 md:gap-4 md:px-4 md:py-3"
+        >
           <span
-            className={`font-mono text-sm tabular-nums ${
-              fila.puesto === 1 ? "text-pelota" : "text-tiza-45"
+            className={`display flex size-11 shrink-0 items-center justify-center rounded-sm border-[3px] border-tinta text-2xl md:size-13 md:text-3xl ${
+              lider ? "bg-naranja text-tinta" : "bg-azul-800 text-crema"
             }`}
           >
             {fila.puesto}
           </span>
-          <Movimiento delta={fila.deltaPuesto} />
-        </div>
 
-        <Avatar jugador={fila.jugador} tamano="sm" className="relative" />
+          <Avatar jugador={fila.jugador} tamano="sm" />
 
-        <div className="relative flex min-w-0 flex-1 flex-col gap-1.5">
-          <span className="flex items-center gap-2 truncate text-base font-medium text-tiza">
-            {fila.jugador.nombre}
-            {fila.racha.tipo === "G" && fila.racha.largo >= 3 ? (
-              <span
-                className="inline-flex items-center gap-0.5 rounded-xs bg-pelota/12 px-1.5 py-0.5 font-mono text-2xs text-pelota"
-                title={`${fila.racha.largo} victorias seguidas`}
-              >
-                <IconoFuego className="size-3" />
-                {fila.racha.largo}
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <span className="flex items-center gap-2">
+              <span className="display truncate text-xl leading-none text-tinta md:text-2xl">
+                {fila.jugador.nombre}
               </span>
-            ) : null}
-          </span>
-          <div className="md:hidden">
-            <Forma resultados={fila.forma} compacto />
+              <Movimiento delta={fila.deltaPuesto} />
+              {fila.racha.tipo === "G" && fila.racha.largo >= 3 ? (
+                <span
+                  className="flex shrink-0 items-center gap-0.5 rounded-[3px] border-2 border-tinta bg-naranja px-1 py-0.5 text-[10px] font-black text-tinta"
+                  title={`${fila.racha.largo} victorias seguidas`}
+                >
+                  <IconoFuego className="size-2.5" />
+                  {fila.racha.largo}
+                </span>
+              ) : null}
+            </span>
+
+            <div className="flex items-center gap-2">
+              <span className="display text-sm text-tinta/70">
+                {fila.pg}<span className="text-tinta/35">G</span> · {fila.pp}
+                <span className="text-tinta/35">P</span>
+              </span>
+              <span className="hidden md:block">
+                <Forma resultados={fila.forma.slice(0, 6)} chico />
+              </span>
+            </div>
           </div>
-        </div>
 
-        <div className="relative hidden w-[4.5rem] md:block">
-          <Forma resultados={fila.forma} />
-        </div>
-
-        <div className="relative hidden w-24 justify-end gap-1 font-mono text-sm tabular-nums text-tiza-45 md:flex">
-          <span className="text-gana">{fila.pg}</span>
-          <span className="text-tiza-25">·</span>
-          <span className="text-pierde/80">{fila.pp}</span>
-        </div>
-
-        <div className="relative flex w-[4.5rem] flex-col items-end gap-0.5">
-          <NumeroRodante
-            valor={fila.elo}
-            className="font-mono text-lg font-medium leading-none text-tiza"
-          />
-          <span className="font-mono text-2xs text-tiza-25">{fila.pj} PJ</span>
-        </div>
+          <div className="flex shrink-0 flex-col items-end">
+            <NumeroRodante valor={fila.elo} className="display text-2xl text-tinta md:text-3xl" />
+            <span className="rotulo text-tinta/40">puntos</span>
+          </div>
+        </motion.div>
       </Link>
     </motion.li>
   );
@@ -193,26 +178,11 @@ function Fila({ fila, maximo, minimo }: { fila: FilaTabla; maximo: number; minim
 export function TablaPosiciones({ tabla }: { tabla: FilaTabla[] }) {
   if (tabla.length === 0) return null;
 
-  const valores = tabla.map((fila) => fila.elo);
-  const maximo = Math.max(...valores);
-  const minimo = Math.min(...valores);
-
   return (
-    <div>
-      <div className="mb-2 hidden items-center gap-4 px-4 md:flex">
-        <span className="etiqueta w-7 text-center">#</span>
-        <span className="etiqueta w-9" />
-        <span className="etiqueta flex-1">Jugador</span>
-        <span className="etiqueta w-[4.5rem]">Forma</span>
-        <span className="etiqueta w-24 text-right">G · P</span>
-        <span className="etiqueta w-[4.5rem] text-right">Puntaje</span>
-      </div>
-
-      <ul className="flex flex-col gap-1">
-        {tabla.map((fila) => (
-          <Fila key={fila.jugador.id} fila={fila} maximo={maximo} minimo={minimo} />
-        ))}
-      </ul>
-    </div>
+    <ul className="flex flex-col gap-2.5">
+      {tabla.map((fila, indice) => (
+        <Fila key={fila.jugador.id} fila={fila} indice={indice} />
+      ))}
+    </ul>
   );
 }

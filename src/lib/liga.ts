@@ -1,14 +1,14 @@
 import { ELO_INICIAL, variacionElo } from "./elo";
-import type { Estado, Jugador, Partido } from "./types";
+import type { Estado, Jugador, NivelDetalle, Partido } from "./types";
 
 export type ResultadoPartido = {
   partido: Partido;
-  setsA: number;
-  setsB: number;
-  puntosA: number;
-  puntosB: number;
+  detalle: NivelDetalle;
   ganadorId: string;
   perdedorId: string;
+  /** Puntos del ganador y del perdedor, si se cargaron. */
+  puntosGanador: number | null;
+  puntosPerdedor: number | null;
   eloAntes: { a: number; b: number };
   eloDespues: { a: number; b: number };
   delta: { a: number; b: number };
@@ -20,9 +20,17 @@ export type PuntoHistoria = {
   elo: number;
   delta: number;
   gano: boolean;
+  rival: string;
 };
 
 export type Racha = { tipo: "G" | "P" | null; largo: number };
+
+export type Cruce = {
+  rival: Jugador;
+  pg: number;
+  pp: number;
+  total: number;
+};
 
 export type StatsJugador = {
   jugador: Jugador;
@@ -32,13 +40,12 @@ export type StatsJugador = {
   pg: number;
   pp: number;
   efectividad: number;
-  setsGanados: number;
-  setsPerdidos: number;
   puntosGanados: number;
   puntosPerdidos: number;
-  difPuntos: number;
+  partidosConPuntos: number;
   racha: Racha;
   mejorRacha: number;
+  peorRacha: number;
   forma: Array<"G" | "P">;
   historia: PuntoHistoria[];
   h2h: Record<string, { pg: number; pp: number }>;
@@ -59,32 +66,26 @@ export type Liga = {
   sinJugar: StatsJugador[];
   stats: Record<string, StatsJugador>;
   totalPartidos: number;
-  totalPuntos: number;
+  totalConPuntos: number;
 };
 
-/** Sets y puntos de un partido, sin tocar ELO. */
+/** Quién ganó, quién perdió y con qué marcador (si se sabe). */
 export function resolver(partido: Partido) {
-  let setsA = 0;
-  let setsB = 0;
-  let puntosA = 0;
-  let puntosB = 0;
+  const ganoA = partido.ganador === partido.jugadorA;
+  const perdedorId = ganoA ? partido.jugadorB : partido.jugadorA;
 
-  for (const game of partido.games) {
-    puntosA += game.a;
-    puntosB += game.b;
-    if (game.a > game.b) setsA += 1;
-    else if (game.b > game.a) setsB += 1;
-  }
+  const tienePuntos =
+    typeof partido.puntosA === "number" && typeof partido.puntosB === "number";
 
-  const ganaA = setsA === setsB ? puntosA >= puntosB : setsA > setsB;
+  const puntosGanador = tienePuntos ? (ganoA ? partido.puntosA! : partido.puntosB!) : null;
+  const puntosPerdedor = tienePuntos ? (ganoA ? partido.puntosB! : partido.puntosA!) : null;
 
   return {
-    setsA,
-    setsB,
-    puntosA,
-    puntosB,
-    ganadorId: ganaA ? partido.jugadorA : partido.jugadorB,
-    perdedorId: ganaA ? partido.jugadorB : partido.jugadorA,
+    detalle: (tienePuntos ? "puntos" : "simple") as NivelDetalle,
+    ganadorId: partido.ganador,
+    perdedorId,
+    puntosGanador,
+    puntosPerdedor,
   };
 }
 
@@ -104,13 +105,12 @@ function statsVacias(jugador: Jugador): StatsJugador {
     pg: 0,
     pp: 0,
     efectividad: 0,
-    setsGanados: 0,
-    setsPerdidos: 0,
     puntosGanados: 0,
     puntosPerdidos: 0,
-    difPuntos: 0,
+    partidosConPuntos: 0,
     racha: { tipo: null, largo: 0 },
     mejorRacha: 0,
+    peorRacha: 0,
     forma: [],
     historia: [],
     h2h: {},
@@ -133,35 +133,36 @@ function simular(jugadores: Jugador[], partidos: Partido[]) {
     const base = resolver(partido);
     const ganaA = base.ganadorId === partido.jugadorA;
 
+    const diferencia =
+      base.puntosGanador !== null && base.puntosPerdedor !== null
+        ? base.puntosGanador - base.puntosPerdedor
+        : null;
+
     const cambio = variacionElo({
       eloGanador: ganaA ? a.elo : b.elo,
       eloPerdedor: ganaA ? b.elo : a.elo,
       partidosGanador: ganaA ? a.pj : b.pj,
       partidosPerdedor: ganaA ? b.pj : a.pj,
-      setsGanador: Math.max(base.setsA, base.setsB),
-      setsPerdedor: Math.min(base.setsA, base.setsB),
+      diferenciaPuntos: diferencia,
     });
 
     const deltaA = ganaA ? cambio.ganador : cambio.perdedor;
     const deltaB = ganaA ? cambio.perdedor : cambio.ganador;
 
-    const resultado: ResultadoPartido = {
+    resultados.push({
       partido,
       ...base,
       eloAntes: { a: a.elo, b: b.elo },
       eloDespues: { a: a.elo + deltaA, b: b.elo + deltaB },
       delta: { a: deltaA, b: deltaB },
-    };
-    resultados.push(resultado);
+    });
 
     aplicar(a, {
       delta: deltaA,
       gano: ganaA,
       rival: b.jugador.id,
-      setsPropios: base.setsA,
-      setsRival: base.setsB,
-      puntosPropios: base.puntosA,
-      puntosRival: base.puntosB,
+      puntosPropios: ganaA ? base.puntosGanador : base.puntosPerdedor,
+      puntosRival: ganaA ? base.puntosPerdedor : base.puntosGanador,
       partidoId: partido.id,
       fecha: partido.jugadoEn,
     });
@@ -170,10 +171,8 @@ function simular(jugadores: Jugador[], partidos: Partido[]) {
       delta: deltaB,
       gano: !ganaA,
       rival: a.jugador.id,
-      setsPropios: base.setsB,
-      setsRival: base.setsA,
-      puntosPropios: base.puntosB,
-      puntosRival: base.puntosA,
+      puntosPropios: ganaA ? base.puntosPerdedor : base.puntosGanador,
+      puntosRival: ganaA ? base.puntosGanador : base.puntosPerdedor,
       partidoId: partido.id,
       fecha: partido.jugadoEn,
     });
@@ -181,14 +180,11 @@ function simular(jugadores: Jugador[], partidos: Partido[]) {
 
   for (const stat of Object.values(stats)) {
     stat.efectividad = stat.pj > 0 ? stat.pg / stat.pj : 0;
-    stat.difPuntos = stat.puntosGanados - stat.puntosPerdidos;
     stat.forma = stat.historia
-      .slice(-5)
+      .slice(-6)
       .reverse()
       .map((punto) => (punto.gano ? "G" : "P"));
-
-    const ultima = stat.historia.at(-1);
-    stat.ultimoPartido = ultima?.fecha ?? null;
+    stat.ultimoPartido = stat.historia.at(-1)?.fecha ?? null;
 
     let largo = 0;
     let tipo: "G" | "P" | null = null;
@@ -200,10 +196,13 @@ function simular(jugadores: Jugador[], partidos: Partido[]) {
     }
     stat.racha = { tipo, largo };
 
-    let corriendo = 0;
+    let ganadas = 0;
+    let perdidas = 0;
     for (const punto of stat.historia) {
-      corriendo = punto.gano ? corriendo + 1 : 0;
-      if (corriendo > stat.mejorRacha) stat.mejorRacha = corriendo;
+      ganadas = punto.gano ? ganadas + 1 : 0;
+      perdidas = punto.gano ? 0 : perdidas + 1;
+      if (ganadas > stat.mejorRacha) stat.mejorRacha = ganadas;
+      if (perdidas > stat.peorRacha) stat.peorRacha = perdidas;
     }
   }
 
@@ -216,10 +215,8 @@ function aplicar(
     delta: number;
     gano: boolean;
     rival: string;
-    setsPropios: number;
-    setsRival: number;
-    puntosPropios: number;
-    puntosRival: number;
+    puntosPropios: number | null;
+    puntosRival: number | null;
     partidoId: string;
     fecha: string;
   },
@@ -229,10 +226,12 @@ function aplicar(
   stat.pj += 1;
   if (datos.gano) stat.pg += 1;
   else stat.pp += 1;
-  stat.setsGanados += datos.setsPropios;
-  stat.setsPerdidos += datos.setsRival;
-  stat.puntosGanados += datos.puntosPropios;
-  stat.puntosPerdidos += datos.puntosRival;
+
+  if (datos.puntosPropios !== null && datos.puntosRival !== null) {
+    stat.puntosGanados += datos.puntosPropios;
+    stat.puntosPerdidos += datos.puntosRival;
+    stat.partidosConPuntos += 1;
+  }
 
   const cruce = stat.h2h[datos.rival] ?? { pg: 0, pp: 0 };
   if (datos.gano) cruce.pg += 1;
@@ -245,15 +244,16 @@ function aplicar(
     elo: stat.elo,
     delta: datos.delta,
     gano: datos.gano,
+    rival: datos.rival,
   });
 }
 
-/** ELO, después partidos ganados, después diferencia de puntos, después alfabético. */
+/** ELO, después partidos ganados, después efectividad, después alfabético. */
 function ordenar(lista: StatsJugador[]): StatsJugador[] {
   return [...lista].sort((x, y) => {
     if (y.elo !== x.elo) return y.elo - x.elo;
     if (y.pg !== x.pg) return y.pg - x.pg;
-    if (y.difPuntos !== x.difPuntos) return y.difPuntos - x.difPuntos;
+    if (y.efectividad !== x.efectividad) return y.efectividad - x.efectividad;
     return x.jugador.nombre.localeCompare(y.jugador.nombre, "es");
   });
 }
@@ -265,8 +265,7 @@ export function computarLiga(estado: Estado): Liga {
   const ordenados = ordenar(conPartidos);
 
   // El puesto de antes del último partido cargado: así la flecha de subida o
-  // bajada dice algo concreto ("esto te movió el último partido"), no un
-  // promedio abstracto.
+  // bajada dice algo concreto ("esto te movió el último partido").
   const previos = new Map<string, number>();
   if (estado.partidos.length > 1) {
     const historicos = cronologico(estado.partidos).slice(0, -1);
@@ -279,11 +278,7 @@ export function computarLiga(estado: Estado): Liga {
   const tabla: FilaTabla[] = ordenados.map((stat, indice) => {
     const puesto = indice + 1;
     const previo = previos.get(stat.jugador.id);
-    return {
-      ...stat,
-      puesto,
-      deltaPuesto: previo === undefined ? 0 : previo - puesto,
-    };
+    return { ...stat, puesto, deltaPuesto: previo === undefined ? 0 : previo - puesto };
   });
 
   const sinJugar = Object.values(stats)
@@ -302,15 +297,31 @@ export function computarLiga(estado: Estado): Liga {
     sinJugar,
     stats,
     totalPartidos: resultados.length,
-    totalPuntos: resultados.reduce((suma, r) => suma + r.puntosA + r.puntosB, 0),
+    totalConPuntos: resultados.filter((resultado) => resultado.detalle === "puntos").length,
   };
 }
 
-/** Cruce directo entre dos jugadores, del más nuevo al más viejo. */
+/** Cruces de un jugador contra todos sus rivales, del más jugado al menos. */
+export function crucesDe(liga: Liga, jugadorId: string): Cruce[] {
+  const stats = liga.stats[jugadorId];
+  if (!stats) return [];
+
+  return Object.entries(stats.h2h)
+    .map(([rivalId, marca]) => ({
+      rival: liga.porId[rivalId],
+      pg: marca.pg,
+      pp: marca.pp,
+      total: marca.pg + marca.pp,
+    }))
+    .filter((cruce): cruce is Cruce => Boolean(cruce.rival))
+    .sort((x, y) => y.total - x.total || y.pg - x.pg);
+}
+
+/** Todos los partidos entre dos jugadores, del más nuevo al más viejo. */
 export function historialCruce(liga: Liga, unoId: string, otroId: string): ResultadoPartido[] {
   return liga.recientes.filter(
-    (r) =>
-      (r.partido.jugadorA === unoId && r.partido.jugadorB === otroId) ||
-      (r.partido.jugadorA === otroId && r.partido.jugadorB === unoId),
+    (resultado) =>
+      (resultado.partido.jugadorA === unoId && resultado.partido.jugadorB === otroId) ||
+      (resultado.partido.jugadorA === otroId && resultado.partido.jugadorB === unoId),
   );
 }

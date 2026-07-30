@@ -5,23 +5,23 @@ export type Jugador = {
   creadoEn: string;
 };
 
-/** Puntos de un game individual. `a` corresponde a `partido.jugadorA`. */
-export type Game = {
-  a: number;
-  b: number;
-};
-
+/**
+ * Todos los partidos son a un game de 11. Lo único obligatorio es quién ganó:
+ * así es como quedan la mayoría de los resultados en la vida real ("le ganó
+ * Fede" y listo). El marcador exacto es opcional y se carga cuando se acuerdan.
+ */
 export type Partido = {
   id: string;
   jugadorA: string;
   jugadorB: string;
-  games: Game[];
-  /** ISO. Cuándo se jugó, no cuándo se cargó. */
+  ganador: string;
+  puntosA?: number;
+  puntosB?: number;
   jugadoEn: string;
-  origen: "vivo" | "manual";
-  /** Puntos para ganar un game (11 o 21). */
-  meta: number;
 };
+
+/** "simple" = sabemos quién ganó · "puntos" = sabemos el marcador exacto. */
+export type NivelDetalle = "simple" | "puntos";
 
 export type Estado = {
   version: number;
@@ -30,10 +30,13 @@ export type Estado = {
 };
 
 export const ESTADO_VACIO: Estado = {
-  version: 1,
+  version: 2,
   jugadores: [],
   partidos: [],
 };
+
+/** Puntos para ganar un game. Fijo: la liga entera se juega así. */
+export const META = 11;
 
 export const EMOJIS = [
   "🏓",

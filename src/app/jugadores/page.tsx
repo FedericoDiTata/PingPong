@@ -9,22 +9,16 @@ import {
   IconoCheck,
   IconoDescargar,
   IconoImportar,
-  IconoJugadores,
   IconoLapiz,
   IconoMas,
 } from "@/components/Iconos";
 import { Cargando, Encabezado, Pagina } from "@/components/Pagina";
 import { Boton, Campo, ConfirmarEnLinea, TituloSeccion } from "@/components/ui";
-import { EMOJIS } from "@/lib/types";
+import { escalonar, golpe, resorte } from "@/lib/motion";
 import { useLiga } from "@/lib/store";
+import { EMOJIS } from "@/lib/types";
 
-function SelectorEmoji({
-  valor,
-  onCambio,
-}: {
-  valor: string;
-  onCambio: (emoji: string) => void;
-}) {
+function SelectorEmoji({ valor, onCambio }: { valor: string; onCambio: (emoji: string) => void }) {
   const [abierto, setAbierto] = useState(false);
 
   return (
@@ -33,7 +27,7 @@ function SelectorEmoji({
         type="button"
         onClick={() => setAbierto((previo) => !previo)}
         aria-label="Elegir emoji"
-        className="flex size-11 items-center justify-center rounded-md border border-[var(--borde)] bg-mesa-850 text-xl transition-colors duration-150 hover:border-[var(--borde-fuerte)]"
+        className="flex size-13 items-center justify-center rounded-md border-[3px] border-tinta bg-crema text-2xl shadow-[var(--golpe-chico)] transition-colors duration-100 hover:bg-naranja-claro"
       >
         {valor}
       </button>
@@ -41,11 +35,11 @@ function SelectorEmoji({
       <AnimatePresence>
         {abierto ? (
           <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            initial={{ opacity: 0, y: -10, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.98 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute left-0 top-13 z-20 grid w-[15.5rem] grid-cols-5 gap-1 rounded-md border border-[var(--borde-fuerte)] bg-mesa-850 p-2 shadow-[var(--sombra-media)]"
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={golpe}
+            className="absolute left-0 top-16 z-20 grid w-[17rem] grid-cols-5 gap-1.5 rounded-md border-[3px] border-tinta bg-crema p-2.5 shadow-[var(--golpe)]"
           >
             {EMOJIS.map((emoji) => (
               <button
@@ -55,8 +49,10 @@ function SelectorEmoji({
                   onCambio(emoji);
                   setAbierto(false);
                 }}
-                className={`flex size-10 items-center justify-center rounded-sm text-lg transition-colors duration-150 ${
-                  emoji === valor ? "bg-pelota/15" : "hover:bg-mesa-700"
+                className={`flex size-11 items-center justify-center rounded-sm border-2 text-xl transition-colors duration-100 ${
+                  emoji === valor
+                    ? "border-tinta bg-naranja"
+                    : "border-transparent hover:border-tinta hover:bg-hueso"
                 }`}
               >
                 {emoji}
@@ -98,6 +94,7 @@ export default function PaginaJugadores() {
     const usados = new Set(estado.jugadores.map((jugador) => jugador.emoji));
     usados.add(emoji);
     setEmoji(EMOJIS.find((candidato) => !usados.has(candidato)) ?? EMOJIS[0]);
+    navigator.vibrate?.(12);
   }
 
   function descargar() {
@@ -115,8 +112,7 @@ export default function PaginaJugadores() {
     const archivo = evento.target.files?.[0];
     if (!archivo) return;
 
-    const texto = await archivo.text();
-    const resultado = importar(texto);
+    const resultado = importar(await archivo.text());
     setAviso(
       resultado.ok
         ? { tipo: "ok", texto: "Liga importada. Se reemplazaron los datos de este navegador." }
@@ -128,7 +124,7 @@ export default function PaginaJugadores() {
   if (!hidratado) {
     return (
       <Pagina>
-        <Encabezado etiqueta="El plantel" titulo="Jugadores" />
+        <Encabezado rotulo="El plantel" titulo="Jugadores" />
         <Cargando />
       </Pagina>
     );
@@ -137,16 +133,13 @@ export default function PaginaJugadores() {
   return (
     <Pagina>
       <Encabezado
-        etiqueta="El plantel"
+        rotulo="El plantel"
         titulo="Jugadores"
-        bajada="Cargá a cada uno una vez. Todos arrancan con 1000 puntos."
+        bajada="Cargá a cada uno una sola vez. Todos arrancan con 1000 puntos."
       />
 
-      <form onSubmit={sumarJugador} className="mb-10 flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-2">
-          <span className="etiqueta">Emoji</span>
-          <SelectorEmoji valor={emoji} onCambio={setEmoji} />
-        </div>
+      <form onSubmit={sumarJugador} className="mb-12 flex flex-wrap items-end gap-3">
+        <SelectorEmoji valor={emoji} onCambio={setEmoji} />
 
         <div className="min-w-[12rem] flex-1">
           <Campo
@@ -154,25 +147,25 @@ export default function PaginaJugadores() {
             value={nombre}
             onChange={(evento) => setNombre(evento.target.value)}
             placeholder="Cómo le dicen"
-            maxLength={20}
+            maxLength={18}
           />
         </div>
 
-        <Boton type="submit" variante="primario" tamano="lg" disabled={!nombre.trim()}>
-          <IconoMas className="size-4" />
+        <Boton type="submit" variante="naranja" tamano="lg" disabled={!nombre.trim()}>
+          <IconoMas className="size-5" />
           Agregar
         </Boton>
       </form>
 
       {liga.jugadores.length === 0 ? (
-        <div className="panel mb-12 rounded-lg px-6 py-12 text-center">
-          <IconoJugadores className="mx-auto mb-4 size-8 text-tiza-25" />
-          <p className="text-sm text-tiza-45">
-            Todavía no hay nadie. Sumá al menos dos para poder anotar un partido.
+        <div className="cartel mb-14 rounded-lg px-6 py-12 text-center">
+          <p className="display text-2xl text-tinta">Todavía no hay nadie</p>
+          <p className="mt-2 text-sm font-bold text-tinta/60">
+            Sumá al menos dos para poder anotar un partido.
           </p>
         </div>
       ) : (
-        <ul className="mb-14 flex flex-col gap-1.5">
+        <ul className="mb-16 flex flex-col gap-2.5">
           <AnimatePresence initial={false}>
             {liga.jugadores.map((jugador, indice) => {
               const stats = liga.stats[jugador.id];
@@ -182,15 +175,11 @@ export default function PaginaJugadores() {
                 <motion.li
                   key={jugador.id}
                   layout
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.15 } }}
-                  transition={{
-                    duration: 0.3,
-                    delay: Math.min(indice, 8) * 0.02,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  className="panel flex items-center gap-3 rounded-md px-3 py-2.5"
+                  initial={{ opacity: 0, x: -20, scale: 0.96 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+                  transition={{ ...resorte, delay: escalonar(indice, 0.03) }}
+                  className="cartel flex flex-wrap items-center gap-3 rounded-md px-3 py-3"
                 >
                   <Avatar jugador={jugador} tamano="sm" />
 
@@ -206,33 +195,35 @@ export default function PaginaJugadores() {
                       <input
                         autoFocus
                         value={nombreEditado}
-                        maxLength={20}
+                        maxLength={18}
                         onChange={(evento) => setNombreEditado(evento.target.value)}
-                        className="h-9 flex-1 rounded-sm border border-pelota/50 bg-mesa-800 px-2.5 text-base text-tiza outline-none"
+                        className="display h-11 min-w-0 flex-1 rounded-sm border-[3px] border-tinta bg-naranja-claro px-3 text-xl text-tinta outline-none"
                       />
-                      <button
-                        type="submit"
-                        aria-label="Guardar nombre"
-                        className="rounded-xs p-1.5 text-gana transition-opacity hover:opacity-70"
-                      >
+                      <Boton type="submit" tamano="sm" variante="naranja">
                         <IconoCheck className="size-4" />
-                      </button>
+                      </Boton>
                     </form>
                   ) : (
                     <>
                       <Link
                         href={`/jugador/${jugador.id}`}
-                        className="flex-1 truncate text-base text-tiza transition-colors duration-150 hover:text-pelota"
+                        className="display min-w-0 flex-1 truncate text-2xl text-tinta hover:text-naranja-hondo"
                       >
                         {jugador.nombre}
                       </Link>
 
-                      <span className="hidden font-mono text-2xs text-tiza-25 sm:block">
-                        {stats && stats.pj > 0
-                          ? `${fila ? `#${fila.puesto} · ` : ""}${stats.pj} PJ`
-                          : "sin partidos"}
+                      <span className="display text-lg text-tinta/60">
+                        {stats && stats.pj > 0 ? (
+                          <>
+                            {fila ? `#${fila.puesto} · ` : ""}
+                            {stats.pg}G · {stats.pp}P
+                          </>
+                        ) : (
+                          <span className="rotulo text-tinta/40">sin partidos</span>
+                        )}
                       </span>
-                      <span className="w-14 text-right font-mono text-sm tabular-nums text-tiza-70">
+
+                      <span className="display w-16 text-right text-2xl text-tinta">
                         {stats?.elo ?? 1000}
                       </span>
 
@@ -242,7 +233,7 @@ export default function PaginaJugadores() {
                           setNombreEditado(jugador.nombre);
                         }}
                         aria-label={`Renombrar a ${jugador.nombre}`}
-                        className="rounded-xs p-1.5 text-tiza-25 transition-colors duration-150 hover:text-tiza"
+                        className="rounded-sm p-1.5 text-tinta/35 transition-colors duration-100 hover:text-tinta"
                       >
                         <IconoLapiz className="size-4" />
                       </button>
@@ -257,7 +248,7 @@ export default function PaginaJugadores() {
                           <button
                             onClick={abrir}
                             aria-label={`Borrar a ${jugador.nombre}`}
-                            className="rounded-xs p-1.5 text-tiza-25 transition-colors duration-150 hover:text-pierde"
+                            className="rounded-sm p-1.5 text-tinta/35 transition-colors duration-100 hover:text-naranja-hondo"
                           >
                             <IconoBasura className="size-4" />
                           </button>
@@ -272,17 +263,14 @@ export default function PaginaJugadores() {
         </ul>
       )}
 
-      <section className="border-t border-[var(--borde)] pt-10">
-        <TituloSeccion
-          etiqueta="Respaldo"
-          titulo="Los datos son tuyos"
-        />
-        <p className="mb-5 max-w-[62ch] text-sm leading-relaxed text-tiza-45">
-          La liga vive en este navegador: no hay cuentas ni servidor. Descargá el archivo para
-          tener una copia o para que otro la abra en su celular.
+      <section className="border-t-[3px] border-tinta pt-10">
+        <TituloSeccion rotulo="Respaldo" titulo="Los datos son tuyos" />
+        <p className="mb-6 max-w-[62ch] text-sm font-medium leading-relaxed text-crema/65">
+          La liga vive en este navegador: no hay cuentas ni servidor. Descargá el archivo para tener
+          una copia o para que otro la abra en su celular.
         </p>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           <Boton onClick={descargar} disabled={liga.jugadores.length === 0}>
             <IconoDescargar className="size-4" />
             Descargar liga
@@ -301,15 +289,11 @@ export default function PaginaJugadores() {
           />
 
           {liga.jugadores.length === 0 ? (
-            <Boton variante="fantasma" onClick={cargarDemo}>
-              Cargar datos de ejemplo
+            <Boton variante="azul" onClick={cargarDemo}>
+              Cargar ejemplo
             </Boton>
           ) : (
-            <ConfirmarEnLinea
-              onConfirmar={vaciar}
-              pregunta="Se borra todo"
-              textoConfirmar="Borrar todo"
-            >
+            <ConfirmarEnLinea onConfirmar={vaciar} pregunta="Se borra todo" textoConfirmar="Borrar">
               {(abrir) => (
                 <Boton variante="peligro" onClick={abrir}>
                   Empezar de cero
@@ -322,11 +306,13 @@ export default function PaginaJugadores() {
         <AnimatePresence>
           {aviso ? (
             <motion.p
-              initial={{ opacity: 0, y: 6 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className={`mt-4 text-sm ${aviso.tipo === "ok" ? "text-gana" : "text-pierde"}`}
+              transition={golpe}
+              className={`mt-5 inline-block rounded-sm border-[3px] border-tinta px-3 py-2 text-xs font-bold ${
+                aviso.tipo === "ok" ? "bg-naranja text-tinta" : "bg-crema text-tinta"
+              }`}
             >
               {aviso.texto}
             </motion.p>

@@ -1,4 +1,4 @@
-import type { Estado, Game, Jugador, Partido } from "./types";
+import type { Estado, Jugador, Partido } from "./types";
 
 /** Generador determinístico: los datos de ejemplo son siempre los mismos. */
 function azar(semilla: number) {
@@ -13,10 +13,10 @@ function azar(semilla: number) {
 }
 
 /**
- * Simula un game punto por punto en vez de inventar el resultado final.
- * Sale gratis y produce marcadores creíbles: 11-8, 12-10, 11-4, con deuces.
+ * Simula el game punto por punto en vez de inventar el resultado final.
+ * Sale gratis y produce marcadores creíbles: 11-8, 13-11, 11-4.
  */
-function jugarGame(probA: number, rand: () => number): Game {
+function jugarGame(probA: number, rand: () => number): { a: number; b: number } {
   let a = 0;
   let b = 0;
   while (true) {
@@ -24,19 +24,6 @@ function jugarGame(probA: number, rand: () => number): Game {
     else b += 1;
     if ((a >= 11 || b >= 11) && Math.abs(a - b) >= 2) return { a, b };
   }
-}
-
-function jugarPartido(probA: number, rand: () => number): Game[] {
-  const games: Game[] = [];
-  let setsA = 0;
-  let setsB = 0;
-  while (setsA < 3 && setsB < 3) {
-    const game = jugarGame(probA, rand);
-    games.push(game);
-    if (game.a > game.b) setsA += 1;
-    else setsB += 1;
-  }
-  return games;
 }
 
 const PLANTEL: Array<{ nombre: string; emoji: string; nivel: number }> = [
@@ -60,7 +47,7 @@ export function generarDemo(): Estado {
   }));
 
   const partidos: Partido[] = [];
-  const total = 26;
+  const total = 42;
 
   for (let i = 0; i < total; i += 1) {
     const a = Math.floor(rand() * PLANTEL.length);
@@ -69,10 +56,12 @@ export function generarDemo(): Estado {
 
     const ventaja = PLANTEL[a].nivel - PLANTEL[b].nivel;
     const probA = Math.min(0.68, Math.max(0.32, 0.5 + ventaja * 1.6));
+    const marcador = jugarGame(probA, rand);
 
-    // De más viejo a más nuevo, con huecos irregulares para que no parezca
-    // una grilla perfecta de partidos cada 24 horas exactas.
-    const diasAtras = 34 - i * 1.3 - rand() * 0.8;
+    // Como en la vida real: de la mayoría sólo queda quién ganó.
+    const seAcuerdanElMarcador = rand() < 0.35;
+
+    const diasAtras = 34 - i * 0.8 - rand() * 0.5;
     const jugadoEn = new Date(
       ahora - diasAtras * 86_400_000 + (rand() * 4 - 2) * 3_600_000,
     ).toISOString();
@@ -81,12 +70,11 @@ export function generarDemo(): Estado {
       id: `demo-p-${i + 1}`,
       jugadorA: jugadores[a].id,
       jugadorB: jugadores[b].id,
-      games: jugarPartido(probA, rand),
+      ganador: marcador.a > marcador.b ? jugadores[a].id : jugadores[b].id,
+      ...(seAcuerdanElMarcador ? { puntosA: marcador.a, puntosB: marcador.b } : {}),
       jugadoEn,
-      origen: rand() > 0.45 ? "vivo" : "manual",
-      meta: 11,
     });
   }
 
-  return { version: 1, jugadores, partidos };
+  return { version: 2, jugadores, partidos };
 }

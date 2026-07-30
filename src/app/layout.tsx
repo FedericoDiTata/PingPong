@@ -1,18 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Instrument_Sans } from "next/font/google";
+import { Anton, Archivo } from "next/font/google";
 import "./globals.css";
 import { Fondo } from "@/components/Fondo";
 import { ConfiguracionMovimiento } from "@/components/Motion";
 import { BarraInferior, BarraSuperior } from "@/components/Navegacion";
 
-const sans = Instrument_Sans({
-  variable: "--font-instrument",
+const display = Anton({
+  variable: "--font-anton",
   subsets: ["latin"],
+  weight: "400",
   display: "swap",
 });
 
-const mono = Geist_Mono({
-  variable: "--font-geist-mono",
+const sans = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
   display: "swap",
 });
@@ -20,25 +21,25 @@ const mono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Mesa · liga de ping pong",
   description:
-    "Ranking, historial y estadísticas de los partidos de ping pong entre amigos. Marcador en vivo y puntaje ELO.",
+    "Quién le ganó a quién. Ranking, historial y estadísticas de los partidos de ping pong entre amigos.",
   applicationName: "Mesa",
   appleWebApp: { capable: true, title: "Mesa", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#131620",
+  themeColor: "#1b2a63",
   colorScheme: "dark",
   viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${sans.variable} ${mono.variable} antialiased`}>
+    <html lang="es" className={`${display.variable} ${sans.variable} antialiased`}>
       <body className="min-h-dvh">
         <Fondo />
         <ConfiguracionMovimiento>
           <BarraSuperior />
-          <main className="mx-auto w-full max-w-5xl px-4 pb-28 pt-6 md:px-8 md:pb-20 md:pt-10">
+          <main className="mx-auto w-full max-w-5xl px-4 pb-32 pt-6 md:px-8 md:pb-20 md:pt-10">
             {children}
           </main>
           <BarraInferior />

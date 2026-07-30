@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { Avatar } from "@/components/Avatar";
-import { IconoHistorial } from "@/components/Iconos";
 import { Cargando, Encabezado, Pagina } from "@/components/Pagina";
 import { TarjetaPartido } from "@/components/TarjetaPartido";
 import { Boton, EstadoVacio } from "@/components/ui";
 import { etiquetaDia } from "@/lib/format";
 import type { ResultadoPartido } from "@/lib/liga";
+import { escalonar, resorte } from "@/lib/motion";
 import { useLiga } from "@/lib/store";
 
 export default function PaginaHistorial() {
@@ -37,7 +37,7 @@ export default function PaginaHistorial() {
   if (!hidratado) {
     return (
       <Pagina>
-        <Encabezado etiqueta="Todo lo jugado" titulo="Historial" />
+        <Encabezado rotulo="Todo lo jugado" titulo="Historial" />
         <Cargando />
       </Pagina>
     );
@@ -46,14 +46,13 @@ export default function PaginaHistorial() {
   if (liga.totalPartidos === 0) {
     return (
       <Pagina>
-        <Encabezado etiqueta="Todo lo jugado" titulo="Historial" />
+        <Encabezado rotulo="Todo lo jugado" titulo="Historial" />
         <EstadoVacio
-          icono={<IconoHistorial className="size-8" />}
           titulo="Todavía no hay partidos"
-          detalle="Cada partido que anotes queda acá, con el detalle game por game y lo que movió el puntaje."
+          detalle="Cada resultado que anotes queda acá, agrupado por día y con quién le ganó a quién."
           accion={
-            <Link href="/partido">
-              <Boton variante="primario" tamano="lg">
+            <Link href="/cargar">
+              <Boton variante="naranja" tamano="lg">
                 Anotar un partido
               </Boton>
             </Link>
@@ -66,48 +65,50 @@ export default function PaginaHistorial() {
   return (
     <Pagina>
       <Encabezado
-        etiqueta="Todo lo jugado"
+        rotulo="Todo lo jugado"
         titulo="Historial"
-        bajada={`${liga.totalPartidos} partidos anotados desde el primer día.`}
+        bajada={`${liga.totalPartidos} partidos · ${liga.totalConPuntos} con marcador cargado.`}
       />
 
-      <div className="mb-8 flex flex-wrap gap-2">
-        <button
+      <div className="mb-10 flex flex-wrap gap-2">
+        <motion.button
+          whileTap={{ scale: 0.94 }}
           onClick={() => setFiltro(null)}
-          className={`rounded-md border px-3.5 py-2 text-sm transition-colors duration-150 ${
-            filtro === null
-              ? "border-pelota/45 bg-pelota/10 text-tiza"
-              : "border-[var(--borde)] bg-mesa-900 text-tiza-45 hover:text-tiza-70"
+          className={`rounded-sm border-[3px] border-tinta px-3.5 py-2 text-2xs font-black uppercase tracking-[0.1em] transition-colors duration-100 ${
+            filtro === null ? "bg-naranja text-tinta" : "bg-azul-800 text-crema/70 hover:text-crema"
           }`}
         >
           Todos
-        </button>
-        {liga.tabla.map((fila) => {
+        </motion.button>
+
+        {liga.tabla.map((fila, indice) => {
           const activo = filtro === fila.jugador.id;
           return (
-            <button
+            <motion.button
               key={fila.jugador.id}
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ ...resorte, delay: escalonar(indice, 0.03) }}
+              whileTap={{ scale: 0.94 }}
               onClick={() => setFiltro(activo ? null : fila.jugador.id)}
-              className={`flex items-center gap-2 rounded-md border py-1.5 pl-1.5 pr-3.5 text-sm transition-colors duration-150 ${
-                activo
-                  ? "border-pelota/45 bg-pelota/10 text-tiza"
-                  : "border-[var(--borde)] bg-mesa-900 text-tiza-45 hover:text-tiza-70"
+              className={`flex items-center gap-2 rounded-sm border-[3px] border-tinta py-1.5 pl-1.5 pr-3 transition-colors duration-100 ${
+                activo ? "bg-naranja text-tinta" : "bg-azul-800 text-crema/70 hover:text-crema"
               }`}
             >
-              <Avatar jugador={fila.jugador} tamano="xs" />
-              {fila.jugador.nombre}
-            </button>
+              <Avatar jugador={fila.jugador} tamano="xs" torcido={false} />
+              <span className="display text-base">{fila.jugador.nombre}</span>
+            </motion.button>
           );
         })}
       </div>
 
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-10">
         {grupos.map(([dia, partidos]) => (
           <section key={dia}>
-            <h2 className="sticky top-14 z-10 -mx-4 mb-3 bg-mesa-950/85 px-4 py-2 backdrop-blur-sm md:top-16 md:-mx-8 md:px-8">
-              <span className="etiqueta">{dia}</span>
+            <h2 className="sticky top-16 z-10 -mx-4 mb-4 bg-azul-900/95 px-4 py-2 backdrop-blur-sm md:-mx-8 md:px-8">
+              <span className="display text-xl text-naranja md:text-2xl">{dia}</span>
             </h2>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2.5">
               <AnimatePresence initial={false}>
                 {partidos.map((resultado, indice) => (
                   <TarjetaPartido
@@ -115,6 +116,7 @@ export default function PaginaHistorial() {
                     resultado={resultado}
                     liga={liga}
                     indice={indice}
+                    destacarA={filtro ?? undefined}
                     onBorrar={() => borrarPartido(resultado.partido.id)}
                   />
                 ))}
@@ -124,7 +126,7 @@ export default function PaginaHistorial() {
         ))}
 
         {grupos.length === 0 ? (
-          <p className="py-10 text-center text-sm text-tiza-45">
+          <p className="py-10 text-center text-base font-bold text-crema/50">
             No hay partidos de ese jugador todavía.
           </p>
         ) : null}

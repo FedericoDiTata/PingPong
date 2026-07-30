@@ -2,53 +2,56 @@
 
 ## Registro
 
-`product` — la interfaz sirve a una tarea. Nadie entra a Mesa a mirarla: entra a anotar un punto,
-ver quién va primero o revisar si le gana a alguien. La app tiene que desaparecer detrás de eso.
-
-La excepción son dos momentos, que sí son escenográficos: el podio del ranking y la pantalla de
-final de partido. Ahí el resultado es el producto.
+Mezcla deliberada. La estructura es de producto (una tarea repetida, muchas veces, rápido), pero la
+piel es de marca: afiche de club, tipografía enorme, movimiento por todos lados. No es un panel de
+control: es el pizarrón del quincho.
 
 ## Usuarios
 
-Un grupo chico de amigos o compañeros de trabajo con una mesa de ping pong. Entre 3 y 10 personas.
-Ninguno es árbitro ni lleva planillas: quieren discutir quién es mejor con datos.
+Un grupo chico de amigos o compañeros con una mesa de ping pong. Entre 3 y 10 personas. Ninguno
+lleva planillas: quieren discutir quién es mejor con datos.
 
-**Escena de uso:** un celular apoyado en el borde de la mesa, de noche, con luz artificial. Alguien
-toca la pantalla con la mano transpirada entre punto y punto mientras el otro protesta. Nadie va a
-leer instrucciones ni a completar un formulario de cinco campos parado al lado de la red.
+**Escena de uso:** se juega, se cuenta en voz alta, se grita el resultado, y recién después
+alguien agarra el celular y lo anota. A veces se anotan cinco partidos juntos al final de la
+tarde, de memoria.
 
-De ahí salen tres decisiones: **pantalla oscura** (uso nocturno, contraste alto sin encandilar),
-**blancos táctiles enormes** (media pantalla por jugador) y **cero fricción para guardar** (el
-partido se guarda solo al terminar, con deshacer a un toque).
+De ahí sale la decisión central del producto: **lo único obligatorio es quién le ganó a quién**. El
+marcador exacto es un extra que se carga cuando se acuerdan. Una app que exija el resultado punto
+por punto termina vacía.
+
+## Qué NO hace
+
+- **No cuenta puntos en vivo.** Se probó y se sacó: los puntos se cantan en voz alta, nadie va a
+  tocar la pantalla entre tiro y tiro.
+- **No configura formatos.** Todos los partidos son a un game de 11. Preguntarlo cada vez sería
+  fricción sin ninguna ganancia.
 
 ## Propósito
 
-Convertir partidos sueltos en una liga: ranking, rachas, historial y cruces directos. El valor no
-está en anotar el resultado, está en lo que ese resultado le hace a la tabla.
+Convertir partidos sueltos en una liga: ranking, rachas, historial y sobre todo el cara a cara.
+La pregunta que la app tiene que contestar mejor que nadie es "¿cómo vengo contra vos?".
 
 ## Tono
 
-Rioplatense, directo, sin solemnidad deportiva ni entusiasmo de app. "La mesa está vacía", "Su
-bestia negra es Nacho", "Fede manda la mesa con 9 victorias al hilo". Nunca "¡Genial!" ni "¡Ups!".
-La app comenta el juego como lo comentaría alguien parado al lado.
+Rioplatense, directo, sin solemnidad deportiva. "La mesa está vacía", "Su bestia negra es Nacho",
+"Fede manda la mesa con 5 victorias al hilo". Nunca "¡Genial!" ni "¡Ups!".
 
 ## Anti-referencias
 
-- **Apps de fitness gamificadas.** Nada de medallas, insignias, niveles ni confeti. El ranking ya
-  es la recompensa.
-- **Dashboards deportivos de TV.** Nada de gradientes azul-violeta, glassmorphism ni tarjetas con
-  ícono + título + descripción repetidas al infinito.
-- **Estética "gamer".** Nada de negro puro con verde neón ni tipografías angulosas.
-- **Marcadores de plástico.** Nada de skeuomorfismo de display de siete segmentos.
+- **Dashboards corporativos.** Nada de gris sobre gris, tarjetitas prolijas ni sobriedad. Esto
+  tiene que verse hecho a mano.
+- **Apps de fitness gamificadas.** Nada de insignias, niveles ni medallas de cartón.
+- **Estética "gamer".** Nada de negro con neón.
 
 ## Principios
 
-1. **El número es el contenido.** Marcadores, puntajes y diferencias en monoespaciada tabular, con
-   el peso visual que les corresponde. Nada de números chiquitos con etiquetas grandes.
-2. **Todo se deriva de los partidos.** No se guarda ningún puntaje: se recalcula reproduciendo el
-   historial. Borrar un partido cargado mal corrige la liga entera, sin estados inconsistentes.
-3. **Sin cuentas ni servidor.** La liga vive en el navegador. El puente entre teléfonos es un
-   archivo JSON que se descarga e importa, no un login.
-4. **Nada de modales.** Confirmar, editar y elegir pasa en línea, donde está el control.
-5. **La animación informa.** Reordenar la tabla, rodar un puntaje, marcar punto de partido. Si un
-   movimiento no comunica un cambio de estado, no va.
+1. **Tres toques y guardado.** Quiénes, quién ganó, guardar. Todo lo demás es opcional.
+2. **Carga en tanda.** Después de guardar, la pareja se limpia sola y lo cargado queda listado con
+   deshacer. Anotar diez partidos viejos tiene que ser cómodo.
+3. **Todo se deriva de los partidos.** No se guarda ningún puntaje: se recalcula reproduciendo el
+   historial. Borrar un partido mal cargado corrige la liga entera.
+4. **Sin cuentas ni servidor.** La liga vive en el navegador; el puente entre teléfonos es un
+   archivo JSON.
+5. **El número es el contenido.** Marcadores y récords en tipografía gigante. Nada de números
+   chiquitos con etiquetas grandes.
+6. **Que se mueva.** Rebote, estallidos, cintas corridas. La app celebra cada resultado.

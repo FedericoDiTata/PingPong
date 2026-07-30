@@ -11,9 +11,8 @@ const CLAVE = "mesa.liga.v1";
  * Store externo con `useSyncExternalStore`.
  *
  * Todo vive en localStorage del navegador. Es una decisión, no una limitación:
- * la app funciona sin cuenta, sin servidor y sin conexión, que es exactamente
- * el contexto de uso (un celular apoyado al lado de la red). Exportar e
- * importar el JSON es el puente para pasar la liga de un teléfono a otro.
+ * la app funciona sin cuenta, sin servidor y sin conexión. Exportar e importar
+ * el JSON es el puente para pasar la liga de un teléfono a otro.
  */
 type Instantanea = { estado: Estado; hidratado: boolean };
 
@@ -33,31 +32,89 @@ function nuevoId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-function validar(dato: unknown): dato is Estado {
-  if (typeof dato !== "object" || dato === null) return false;
-  const posible = dato as Partial<Estado>;
-  if (!Array.isArray(posible.jugadores) || !Array.isArray(posible.partidos)) return false;
+type PartidoCrudo = Partial<Partido> & {
+  games?: Array<{ a?: unknown; b?: unknown }>;
+};
 
-  const jugadoresOk = posible.jugadores.every(
-    (jugador) => typeof jugador?.id === "string" && typeof jugador?.nombre === "string",
-  );
-  const partidosOk = posible.partidos.every(
-    (partido) =>
-      typeof partido?.id === "string" &&
-      typeof partido?.jugadorA === "string" &&
-      typeof partido?.jugadorB === "string" &&
-      Array.isArray(partido?.games),
+/**
+ * Acepta el formato viejo (partidos al mejor de N, con lista de games) y lo
+ * traduce al actual: un game a 11 con marcador opcional. Un archivo exportado
+ * hace meses tiene que seguir abriendo.
+ */
+function normalizarPartido(crudo: PartidoCrudo): Partido | null {
+  if (
+    typeof crudo?.id !== "string" ||
+    typeof crudo.jugadorA !== "string" ||
+    typeof crudo.jugadorB !== "string"
+  ) {
+    return null;
+  }
+
+  let puntosA = typeof crudo.puntosA === "number" ? crudo.puntosA : undefined;
+  let puntosB = typeof crudo.puntosB === "number" ? crudo.puntosB : undefined;
+  let ganador = typeof crudo.ganador === "string" ? crudo.ganador : null;
+
+  if (Array.isArray(crudo.games) && crudo.games.length > 0) {
+    let ganadosA = 0;
+    let ganadosB = 0;
+    for (const game of crudo.games) {
+      const a = Number(game?.a);
+      const b = Number(game?.b);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+      if (a > b) ganadosA += 1;
+      else ganadosB += 1;
+    }
+
+    if (crudo.games.length === 1 && puntosA === undefined) {
+      const unico = crudo.games[0];
+      puntosA = Number(unico?.a);
+      puntosB = Number(unico?.b);
+    }
+
+    ganador ??= ganadosA >= ganadosB ? crudo.jugadorA : crudo.jugadorB;
+  }
+
+  if (!ganador || (ganador !== crudo.jugadorA && ganador !== crudo.jugadorB)) return null;
+
+  const conPuntos = Number.isFinite(puntosA) && Number.isFinite(puntosB);
+
+  return {
+    id: crudo.id,
+    jugadorA: crudo.jugadorA,
+    jugadorB: crudo.jugadorB,
+    ganador,
+    jugadoEn: typeof crudo.jugadoEn === "string" ? crudo.jugadoEn : new Date().toISOString(),
+    ...(conPuntos ? { puntosA: puntosA as number, puntosB: puntosB as number } : {}),
+  };
+}
+
+function normalizar(dato: unknown): Estado | null {
+  if (typeof dato !== "object" || dato === null) return null;
+  const posible = dato as { jugadores?: unknown; partidos?: unknown };
+  if (!Array.isArray(posible.jugadores) || !Array.isArray(posible.partidos)) return null;
+
+  const jugadores = posible.jugadores.filter(
+    (jugador): jugador is Jugador =>
+      typeof jugador?.id === "string" && typeof jugador?.nombre === "string",
   );
 
-  return jugadoresOk && partidosOk;
+  const ids = new Set(jugadores.map((jugador) => jugador.id));
+
+  const partidos = (posible.partidos as PartidoCrudo[])
+    .map(normalizarPartido)
+    .filter(
+      (partido): partido is Partido =>
+        partido !== null && ids.has(partido.jugadorA) && ids.has(partido.jugadorB),
+    );
+
+  return { version: 2, jugadores, partidos };
 }
 
 function leerAlmacenado(): Estado | null {
   try {
     const crudo = window.localStorage.getItem(CLAVE);
     if (!crudo) return null;
-    const dato: unknown = JSON.parse(crudo);
-    return validar(dato) ? dato : null;
+    return normalizar(JSON.parse(crudo));
   } catch {
     return null;
   }
@@ -89,12 +146,12 @@ function hidratar() {
   const guardado = leerAlmacenado();
   instantanea = { estado: guardado ?? instantanea.estado, hidratado: true };
 
-  // Dos pestañas abiertas durante un torneo se mantienen sincronizadas.
+  // Dos pestañas abiertas se mantienen sincronizadas.
   window.addEventListener("storage", (evento) => {
     if (evento.key !== CLAVE || !evento.newValue) return;
     try {
-      const dato: unknown = JSON.parse(evento.newValue);
-      if (validar(dato)) fijar(dato, false);
+      const dato = normalizar(JSON.parse(evento.newValue));
+      if (dato) fijar(dato, false);
     } catch {
       /* ignorar */
     }
@@ -169,9 +226,9 @@ function exportar(): string {
 
 function importar(crudo: string): { ok: boolean; error?: string } {
   try {
-    const dato: unknown = JSON.parse(crudo);
-    if (!validar(dato)) return { ok: false, error: "El archivo no tiene el formato de una liga." };
-    fijar({ version: 1, jugadores: dato.jugadores, partidos: dato.partidos });
+    const dato = normalizar(JSON.parse(crudo));
+    if (!dato) return { ok: false, error: "El archivo no tiene el formato de una liga." };
+    fijar(dato);
     return { ok: true };
   } catch {
     return { ok: false, error: "No se pudo leer el archivo: no es un JSON válido." };

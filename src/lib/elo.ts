@@ -1,5 +1,5 @@
 /**
- * Sistema de puntaje ELO adaptado a una liga chica de amigos.
+ * Puntaje ELO adaptado a una liga chica de amigos.
  *
  * Tres decisiones que se apartan del ELO clásico de ajedrez:
  *
@@ -7,8 +7,9 @@
  * 2. El factor K arranca alto y baja con los partidos jugados: los primeros
  *    resultados mueven mucho la aguja para que el ranking se ordene rápido,
  *    y después se estabiliza para que no lo dé vuelta un partido suelto.
- * 3. Ganar 3-0 vale más que ganar 3-2. El multiplicador de margen premia la
- *    diferencia de sets sin que una paliza rompa la escala.
+ * 3. Una paliza vale un poco más que un partido peleado, pero sólo si sabemos
+ *    el marcador. Si el partido se cargó sin puntos, cuenta como uno normal:
+ *    nadie tiene que anotar el resultado exacto para que la liga funcione.
  */
 
 export const ELO_INICIAL = 1000;
@@ -24,9 +25,10 @@ export function probabilidadEsperada(propio: number, rival: number): number {
   return 1 / (1 + Math.pow(10, (rival - propio) / 400));
 }
 
-/** 2-0 → 1.12 · 3-1 → 1.12 · 3-0 → 1.24 · 3-2 → 1.00 */
-export function multiplicadorMargen(setsGanador: number, setsPerdedor: number): number {
-  return 1 + 0.12 * Math.max(0, setsGanador - setsPerdedor - 1);
+/** 11-9 → 1.00 · 11-5 → 1.08 · 11-0 → 1.14 (tope 1.15). */
+export function multiplicadorMargen(diferencia: number | null): number {
+  if (diferencia === null) return 1;
+  return Math.min(1.15, 1 + 0.0175 * Math.max(0, diferencia - 2));
 }
 
 export function variacionElo(params: {
@@ -34,28 +36,21 @@ export function variacionElo(params: {
   eloPerdedor: number;
   partidosGanador: number;
   partidosPerdedor: number;
-  setsGanador: number;
-  setsPerdedor: number;
+  diferenciaPuntos: number | null;
 }): { ganador: number; perdedor: number } {
   const esperado = probabilidadEsperada(params.eloGanador, params.eloPerdedor);
-  const margen = multiplicadorMargen(params.setsGanador, params.setsPerdedor);
-
-  const subeGanador = factorK(params.partidosGanador) * (1 - esperado) * margen;
-  const bajaPerdedor = factorK(params.partidosPerdedor) * (1 - esperado) * margen;
+  const margen = multiplicadorMargen(params.diferenciaPuntos);
 
   return {
-    ganador: Math.round(subeGanador),
-    perdedor: -Math.round(bajaPerdedor),
+    ganador: Math.round(factorK(params.partidosGanador) * (1 - esperado) * margen),
+    perdedor: -Math.round(factorK(params.partidosPerdedor) * (1 - esperado) * margen),
   };
 }
 
-/**
- * Cuántos puntos se llevaría cada uno si el partido terminara así.
- * Se usa para la previsualización antes de guardar.
- */
-export function proyeccion(eloA: number, eloB: number): { siGanaA: number; siGanaB: number } {
+/** Cuántos puntos se llevaría cada uno según quién gane. Para previsualizar. */
+export function proyeccion(eloA: number, eloB: number, pjA: number, pjB: number) {
   return {
-    siGanaA: Math.round(32 * (1 - probabilidadEsperada(eloA, eloB))),
-    siGanaB: Math.round(32 * (1 - probabilidadEsperada(eloB, eloA))),
+    siGanaA: Math.round(factorK(pjA) * (1 - probabilidadEsperada(eloA, eloB))),
+    siGanaB: Math.round(factorK(pjB) * (1 - probabilidadEsperada(eloB, eloA))),
   };
 }

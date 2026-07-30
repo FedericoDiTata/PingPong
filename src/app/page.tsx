@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
-import { IconoMas, IconoPodio } from "@/components/Iconos";
+import { IconoMas } from "@/components/Iconos";
 import { Cargando, Encabezado, Pagina } from "@/components/Pagina";
 import { Podio, TablaPosiciones } from "@/components/Ranking";
 import { TarjetaPartido } from "@/components/TarjetaPartido";
-import { Boton, EstadoVacio, TituloSeccion } from "@/components/ui";
+import { Boton, Cinta, EstadoVacio, TituloSeccion } from "@/components/ui";
 import { useLiga } from "@/lib/store";
 
 export default function PaginaRanking() {
@@ -15,7 +15,7 @@ export default function PaginaRanking() {
   if (!hidratado) {
     return (
       <Pagina>
-        <Encabezado etiqueta="La liga" titulo="Ranking" />
+        <Encabezado rotulo="La liga" titulo="Ranking" />
         <Cargando />
       </Pagina>
     );
@@ -25,24 +25,23 @@ export default function PaginaRanking() {
     return (
       <Pagina>
         <Encabezado
-          etiqueta="La liga"
+          rotulo="La liga"
           titulo="Ranking"
-          bajada="Todavía no hay nadie anotado. Sumá a los que juegan y el ranking se arma solo con los resultados."
+          bajada="Todavía no hay nadie anotado. Sumá a los que juegan y el ranking se arma solo."
         />
         <EstadoVacio
-          icono={<IconoPodio className="size-8" />}
           titulo="La mesa está vacía"
-          detalle="Cargá los jugadores una sola vez. Después, cada partido que anotes actualiza puestos, rachas y puntaje."
+          detalle="Cargá a los jugadores una sola vez. Después alcanza con anotar quién le ganó a quién."
           accion={
             <>
               <Link href="/jugadores">
-                <Boton variante="primario" tamano="lg">
+                <Boton variante="naranja" tamano="lg">
                   <IconoMas className="size-4" />
                   Agregar jugadores
                 </Boton>
               </Link>
-              <Boton variante="fantasma" tamano="lg" onClick={cargarDemo}>
-                Ver con datos de ejemplo
+              <Boton variante="azul" tamano="lg" onClick={cargarDemo}>
+                Ver ejemplo
               </Boton>
             </>
           }
@@ -55,17 +54,16 @@ export default function PaginaRanking() {
     return (
       <Pagina>
         <Encabezado
-          etiqueta="La liga"
+          rotulo="La liga"
           titulo="Ranking"
-          bajada={`${liga.jugadores.length} anotados y ningún partido jugado. El ranking arranca en el primero.`}
+          bajada={`${liga.jugadores.length} anotados y ningún partido jugado.`}
         />
         <EstadoVacio
-          icono={<IconoPodio className="size-8" />}
           titulo="Sin partidos todavía"
           detalle="Todos arrancan en 1000 puntos. El primer resultado ya mueve la tabla."
           accion={
-            <Link href="/partido">
-              <Boton variante="primario" tamano="lg">
+            <Link href="/cargar">
+              <Boton variante="naranja" tamano="lg">
                 Anotar el primero
               </Boton>
             </Link>
@@ -77,47 +75,57 @@ export default function PaginaRanking() {
 
   const lider = liga.tabla[0];
 
+  const titulares = liga.recientes.slice(0, 8).map((resultado) => {
+    const ganador = liga.porId[resultado.ganadorId]?.nombre ?? "";
+    const perdedor = liga.porId[resultado.perdedorId]?.nombre ?? "";
+    return resultado.puntosGanador !== null
+      ? `${ganador} ${resultado.puntosGanador}-${resultado.puntosPerdedor} ${perdedor}`
+      : `${ganador} le ganó a ${perdedor}`;
+  });
+
   return (
     <Pagina>
       <Encabezado
-        etiqueta="La liga"
+        rotulo="La liga"
         titulo="Ranking"
-        bajada={`${liga.totalPartidos} partidos jugados · ${liga.totalPuntos.toLocaleString("es-AR")} puntos disputados`}
+        bajada={`${liga.totalPartidos} partidos anotados entre ${liga.tabla.length} jugadores.`}
         accion={
-          <Link href="/partido" className="hidden md:block">
-            <Boton variante="primario">
-              <IconoMas className="size-4" />
-              Nuevo partido
+          <Link href="/cargar" className="hidden md:block">
+            <Boton variante="naranja" tamano="lg">
+              <IconoMas className="size-5" />
+              Cargar resultado
             </Boton>
           </Link>
         }
       />
 
+      <Cinta items={titulares} className="mb-10 -rotate-1" />
+
       <Podio tabla={liga.tabla} />
 
       {lider && lider.racha.tipo === "G" && lider.racha.largo >= 2 ? (
-        <p className="mb-8 text-center text-sm text-tiza-45">
-          <span className="font-medium text-tiza">{lider.jugador.nombre}</span> manda la mesa con{" "}
-          <span className="font-mono text-pelota">{lider.racha.largo}</span> victorias al hilo.
+        <p className="mb-8 text-center text-base font-bold text-crema/70">
+          <span className="text-crema">{lider.jugador.nombre}</span> manda la mesa con{" "}
+          <span className="display text-naranja">{lider.racha.largo}</span> victorias al hilo.
         </p>
       ) : null}
 
-      <section className="mb-12">
+      <section className="mb-14">
         <TablaPosiciones tabla={liga.tabla} />
       </section>
 
       {liga.sinJugar.length > 0 ? (
-        <section className="mb-12">
-          <TituloSeccion etiqueta="Todavía en la silla" titulo="Sin partidos" />
-          <ul className="flex flex-wrap gap-2">
+        <section className="mb-14">
+          <TituloSeccion rotulo="Todavía en la silla" titulo="Sin partidos" />
+          <ul className="flex flex-wrap gap-2.5">
             {liga.sinJugar.map((stat) => (
               <li key={stat.jugador.id}>
                 <Link
                   href={`/jugador/${stat.jugador.id}`}
-                  className="flex items-center gap-2.5 rounded-md border border-[var(--borde)] bg-mesa-900 py-2 pl-2 pr-4 text-sm text-tiza-70 transition-colors duration-150 hover:border-[var(--borde-fuerte)] hover:text-tiza"
+                  className="cartel-azul flex items-center gap-2.5 rounded-md py-2 pl-2 pr-4"
                 >
-                  <Avatar jugador={stat.jugador} tamano="xs" />
-                  {stat.jugador.nombre}
+                  <Avatar jugador={stat.jugador} tamano="xs" torcido={false} />
+                  <span className="display text-lg text-crema">{stat.jugador.nombre}</span>
                 </Link>
               </li>
             ))}
@@ -127,19 +135,19 @@ export default function PaginaRanking() {
 
       <section>
         <TituloSeccion
-          etiqueta="Lo último"
-          titulo="Partidos recientes"
+          rotulo="Lo último"
+          titulo="Últimos partidos"
           accion={
             <Link
               href="/historial"
-              className="text-sm text-tiza-45 transition-colors duration-150 hover:text-pelota"
+              className="text-2xs font-bold uppercase tracking-[0.12em] text-naranja hover:text-naranja-claro"
             >
-              Ver todo
+              Ver todo →
             </Link>
           }
         />
-        <div className="flex flex-col gap-2">
-          {liga.recientes.slice(0, 4).map((resultado, indice) => (
+        <div className="flex flex-col gap-2.5">
+          {liga.recientes.slice(0, 5).map((resultado, indice) => (
             <TarjetaPartido
               key={resultado.partido.id}
               resultado={resultado}

@@ -1,34 +1,40 @@
 "use client";
 
 import { motion } from "motion/react";
+import { golpe } from "@/lib/motion";
 
-/** Últimos resultados, el más reciente primero. Barras, no letras: se lee de un vistazo. */
+/**
+ * Últimos resultados, el más reciente primero. Fichas con letra, no barritas:
+ * a esta escala se lee "G G P G" de un vistazo desde el otro lado de la mesa.
+ */
 export function Forma({
   resultados,
-  compacto = false,
+  chico = false,
 }: {
   resultados: Array<"G" | "P">;
-  compacto?: boolean;
+  chico?: boolean;
 }) {
   if (resultados.length === 0) {
-    return <span className="text-2xs text-tiza-25">sin datos</span>;
+    return <span className="rotulo text-crema/40">sin partidos</span>;
   }
 
   return (
     <div
-      className="flex items-center gap-[3px]"
+      className="flex items-center gap-1"
       aria-label={`Últimos resultados: ${resultados.join(", ")}`}
     >
       {resultados.map((resultado, indice) => (
         <motion.span
           key={indice}
-          initial={{ scaleY: 0.3, opacity: 0 }}
-          animate={{ scaleY: 1, opacity: 1 - indice * 0.13 }}
-          transition={{ duration: 0.28, delay: indice * 0.03, ease: [0.16, 1, 0.3, 1] }}
-          className={`block rounded-[2px] ${compacto ? "h-3 w-[3px]" : "h-4 w-1"} ${
-            resultado === "G" ? "bg-gana" : "bg-pierde/55"
-          }`}
-        />
+          initial={{ scale: 0, rotate: -25 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ ...golpe, delay: indice * 0.035 }}
+          className={`display flex items-center justify-center border-2 border-tinta ${
+            chico ? "size-5 rounded-[3px] text-[11px]" : "size-7 rounded-sm text-sm"
+          } ${resultado === "G" ? "bg-naranja text-tinta" : "bg-azul-950 text-crema/70"}`}
+        >
+          {resultado}
+        </motion.span>
       ))}
     </div>
   );
