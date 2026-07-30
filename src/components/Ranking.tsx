@@ -62,7 +62,7 @@ function Escalon({ fila, puesto }: { fila: FilaTabla; puesto: number }) {
           </span>
         ) : null}
         <span className={`display text-4xl md:text-5xl ${estilo.texto}`}>{puesto}</span>
-        <span className={`rotulo ${estilo.texto} opacity-70`}>{fila.elo}</span>
+        <span className={`rotulo ${estilo.texto} opacity-70`}>{fila.puntos} pts</span>
       </motion.div>
     </div>
   );
@@ -166,7 +166,7 @@ function Fila({ fila, indice }: { fila: FilaTabla; indice: number }) {
           </div>
 
           <div className="flex shrink-0 flex-col items-end">
-            <NumeroRodante valor={fila.elo} className="display text-2xl text-tinta md:text-3xl" />
+            <NumeroRodante valor={fila.puntos} className="display text-2xl text-tinta md:text-3xl" />
             <span className="rotulo text-tinta/40">puntos</span>
           </div>
         </motion.div>

@@ -1,4 +1,4 @@
-import { ELO_INICIAL, variacionElo } from "./elo";
+import { PUNTOS_INICIAL, variacionPuntos } from "./elo";
 import type { Estado, Jugador, NivelDetalle, Partido } from "./types";
 
 export type ResultadoPartido = {
@@ -9,15 +9,15 @@ export type ResultadoPartido = {
   /** Puntos del ganador y del perdedor, si se cargaron. */
   puntosGanador: number | null;
   puntosPerdedor: number | null;
-  eloAntes: { a: number; b: number };
-  eloDespues: { a: number; b: number };
+  puntosAntes: { a: number; b: number };
+  puntosDespues: { a: number; b: number };
   delta: { a: number; b: number };
 };
 
 export type PuntoHistoria = {
   partidoId: string;
   fecha: string;
-  elo: number;
+  puntos: number;
   delta: number;
   gano: boolean;
   rival: string;
@@ -34,7 +34,7 @@ export type Cruce = {
 
 export type StatsJugador = {
   jugador: Jugador;
-  elo: number;
+  puntos: number;
   pico: number;
   pj: number;
   pg: number;
@@ -99,8 +99,8 @@ function cronologico(partidos: Partido[]): Partido[] {
 function statsVacias(jugador: Jugador): StatsJugador {
   return {
     jugador,
-    elo: ELO_INICIAL,
-    pico: ELO_INICIAL,
+    puntos: PUNTOS_INICIAL,
+    pico: PUNTOS_INICIAL,
     pj: 0,
     pg: 0,
     pp: 0,
@@ -138,12 +138,12 @@ function simular(jugadores: Jugador[], partidos: Partido[]) {
         ? base.puntosGanador - base.puntosPerdedor
         : null;
 
-    const cambio = variacionElo({
-      eloGanador: ganaA ? a.elo : b.elo,
-      eloPerdedor: ganaA ? b.elo : a.elo,
+    const cambio = variacionPuntos({
+      puntosGanador: ganaA ? a.puntos : b.puntos,
+      puntosPerdedor: ganaA ? b.puntos : a.puntos,
       partidosGanador: ganaA ? a.pj : b.pj,
       partidosPerdedor: ganaA ? b.pj : a.pj,
-      diferenciaPuntos: diferencia,
+      margenDelMarcador: diferencia,
     });
 
     const deltaA = ganaA ? cambio.ganador : cambio.perdedor;
@@ -152,8 +152,8 @@ function simular(jugadores: Jugador[], partidos: Partido[]) {
     resultados.push({
       partido,
       ...base,
-      eloAntes: { a: a.elo, b: b.elo },
-      eloDespues: { a: a.elo + deltaA, b: b.elo + deltaB },
+      puntosAntes: { a: a.puntos, b: b.puntos },
+      puntosDespues: { a: a.puntos + deltaA, b: b.puntos + deltaB },
       delta: { a: deltaA, b: deltaB },
     });
 
@@ -221,8 +221,8 @@ function aplicar(
     fecha: string;
   },
 ) {
-  stat.elo += datos.delta;
-  stat.pico = Math.max(stat.pico, stat.elo);
+  stat.puntos += datos.delta;
+  stat.pico = Math.max(stat.pico, stat.puntos);
   stat.pj += 1;
   if (datos.gano) stat.pg += 1;
   else stat.pp += 1;
@@ -241,17 +241,17 @@ function aplicar(
   stat.historia.push({
     partidoId: datos.partidoId,
     fecha: datos.fecha,
-    elo: stat.elo,
+    puntos: stat.puntos,
     delta: datos.delta,
     gano: datos.gano,
     rival: datos.rival,
   });
 }
 
-/** ELO, después partidos ganados, después efectividad, después alfabético. */
+/** Puntos, después partidos ganados, después efectividad, después alfabético. */
 function ordenar(lista: StatsJugador[]): StatsJugador[] {
   return [...lista].sort((x, y) => {
-    if (y.elo !== x.elo) return y.elo - x.elo;
+    if (y.puntos !== x.puntos) return y.puntos - x.puntos;
     if (y.pg !== x.pg) return y.pg - x.pg;
     if (y.efectividad !== x.efectividad) return y.efectividad - x.efectividad;
     return x.jugador.nombre.localeCompare(y.jugador.nombre, "es");

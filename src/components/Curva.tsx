@@ -2,11 +2,12 @@
 
 import { motion } from "motion/react";
 import { useId } from "react";
-import { ELO_INICIAL } from "@/lib/elo";
+import { PUNTOS_INICIAL } from "@/lib/elo";
 
 /**
  * Evolución del puntaje. El eje Y se escala al recorrido real del jugador, con
- * la línea de 1000 (donde arrancan todos) marcada como referencia.
+ * la línea de arranque marcada como referencia: arriba de esa línea ganaste
+ * puntos desde que empezaste, abajo los perdiste.
  */
 export function Curva({
   valores,
@@ -32,7 +33,7 @@ export function Curva({
     );
   }
 
-  const serie = [ELO_INICIAL, ...valores];
+  const serie = [PUNTOS_INICIAL, ...valores];
   const maximo = Math.max(...serie);
   const minimo = Math.min(...serie);
   const rango = Math.max(maximo - minimo, 24);
@@ -44,7 +45,7 @@ export function Curva({
 
   const linea = serie.map((valor, indice) => `${x(indice)},${y(valor)}`).join(" ");
   const area = `${x(0)},${alto} ${linea} ${x(serie.length - 1)},${alto}`;
-  const baseY = y(ELO_INICIAL);
+  const baseY = y(PUNTOS_INICIAL);
   const finY = y(serie[serie.length - 1]);
 
   return (

@@ -158,7 +158,7 @@ export default function PaginaJugador() {
           </motion.h1>
 
           <div className="flex items-end gap-3">
-            <NumeroRodante valor={stats.elo} className="display text-3xl text-naranja" />
+            <NumeroRodante valor={stats.puntos} className="display text-3xl text-naranja" />
             <span className="rotulo pb-1.5 text-crema/50">puntos</span>
             {stats.pj > 0 ? (
               <span className="rotulo pb-1.5 text-crema/50">
@@ -320,7 +320,7 @@ export default function PaginaJugador() {
                 <span className="rotulo text-tinta/50">Partido a partido</span>
                 <span className="display text-lg text-tinta">pico {stats.pico}</span>
               </div>
-              <Curva valores={stats.historia.map((punto) => punto.elo)} color={tono.fuerte} />
+              <Curva valores={stats.historia.map((punto) => punto.puntos)} color={tono.fuerte} />
             </div>
           </section>
 

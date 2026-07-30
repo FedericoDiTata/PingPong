@@ -24,6 +24,8 @@ Son 76 partidos sin marcador (de esos sólo se sabía quién había ganado), rep
 julio de 2026. Las victorias de cada cruce están intercaladas a lo largo de la serie y no apiladas,
 para que las rachas y la curva de puntaje digan algo real.
 
+Con ese historial la tabla arranca así: **Ernes 109 · Fer 70 · Fede 47 · Chris 25**.
+
 Desde ahí en adelante, todo lo que se anote se suma encima.
 
 ## Cómo se usa
@@ -36,7 +38,7 @@ Desde ahí en adelante, todo lo que se anote se suma encima.
    (0 a 9) y listo. Para los partidos peleados hay un botón *Deuce* que deja escribir 12-10, 13-11
    o lo que haya salido.
 2. **Mirá el ranking**. Cada resultado recalcula puestos, rachas y puntaje.
-3. **Sumá gente** cuando haga falta, en *Jugadores*. Los que entran arrancan en 1000 puntos.
+3. **Sumá gente** cuando haga falta, en *Jugadores*. Los que entran arrancan con 50 puntos.
 
 La pantalla de carga está pensada para descargar una tanda de partidos de una sentada: se guarda,
 la pareja se limpia sola, y abajo queda la lista de lo recién cargado con un botón para deshacer si
@@ -58,20 +60,24 @@ En el perfil (se entra tocando cualquier nombre):
 
 ## Cómo funciona el puntaje
 
-Es un ELO (el sistema del ajedrez) con tres cambios pensados para una liga chica:
+Es un ELO (el sistema del ajedrez) con cuatro cambios pensados para una liga chica:
 
-- **Todos arrancan en 1000.** Número redondo, fácil de leer.
+- **Todos arrancan con 50 y nadie puede quedar en negativo.** No se puede perder lo que no se
+  tiene: el que llega a cero no baja más, sólo puede subir.
 - **El factor K baja con la experiencia.** Los primeros 5 partidos mueven mucho (K=48), entre el 5
   y el 15 menos (K=32), después se estabiliza (K=24). El ranking se ordena rápido al principio y no
   lo da vuelta un partido suelto más adelante.
 - **Una paliza vale un poco más**, pero sólo si cargaste el marcador. Si el partido se anotó sin
   puntos, cuenta como uno normal: nadie tiene que anotar el resultado exacto para que esto funcione.
+- **Ganarle a alguien de arriba suma más**, y perder contra alguien de abajo cuesta más.
 
-Ganarle a alguien con más puntos que vos suma más; perder contra alguien de menos puntos cuesta
-más. Es simétrico: lo que uno gana, el otro lo pierde.
-
-El puntaje **no se guarda**: se recalcula reproduciendo todos los partidos en orden cada vez que
-algo cambia. Por eso podés borrar un partido cargado por error y toda la tabla se corrige sola.
+Lo que uno gana, el otro lo pierde. La única excepción es el piso: si el que perdió no tiene puntos
+suficientes, el ganador igual se lleva los suyos. Por eso todos arrancan con 50 y no con 0, para que
+haya colchón y eso casi no pase — con el historial de esta liga el piso se toca tres veces en 76
+partidos, todas al principio. El número está en `PUNTOS_INICIAL` (`src/lib/elo.ts`) y se puede
+cambiar sin romper nada: el puntaje **no se guarda**, se recalcula reproduciendo todos los partidos
+en orden cada vez que algo cambia. Por eso también podés borrar un partido mal cargado y toda la
+tabla se corrige sola.
 
 ---
 

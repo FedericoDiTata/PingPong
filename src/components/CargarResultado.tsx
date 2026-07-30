@@ -180,7 +180,7 @@ export function CargarResultado({
                     {jugador.nombre}
                   </span>
                   <span className="text-2xs font-bold text-tinta/55">
-                    {stats?.elo ?? 1000} pts
+                    {stats?.puntos ?? 0} pts
                   </span>
                 </span>
 

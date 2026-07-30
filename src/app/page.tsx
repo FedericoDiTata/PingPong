@@ -55,7 +55,7 @@ export default function PaginaRanking() {
         />
         <EstadoVacio
           titulo="Sin partidos todavía"
-          detalle="Todos arrancan en 1000 puntos. El primer resultado ya mueve la tabla."
+          detalle="Todos arrancan con 50 puntos. El primer resultado ya mueve la tabla."
           accion={
             <Link href="/cargar">
               <Boton variante="naranja" tamano="lg">

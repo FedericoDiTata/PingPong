@@ -134,7 +134,7 @@ export default function PaginaJugadores() {
       <Encabezado
         rotulo="El plantel"
         titulo="Jugadores"
-        bajada="Cargá a cada uno una sola vez. Todos arrancan con 1000 puntos."
+        bajada="Cargá a cada uno una sola vez. Los que entran arrancan con 50 puntos."
       />
 
       <form onSubmit={sumarJugador} className="mb-12 flex flex-wrap items-end gap-3">
@@ -223,7 +223,7 @@ export default function PaginaJugadores() {
                       </span>
 
                       <span className="display w-16 text-right text-2xl text-tinta">
-                        {stats?.elo ?? 1000}
+                        {stats?.puntos ?? 0}
                       </span>
 
                       <button
