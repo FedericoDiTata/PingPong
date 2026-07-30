@@ -8,21 +8,39 @@ Todos los partidos son a **un game de 11**.
 
 ---
 
+## Con qué arranca
+
+La primera vez que se abre en un navegador, la app se siembra sola con el plantel y el historial
+que ya se venía llevando de memoria (`src/lib/inicial.ts`):
+
+| | Fede | Chris | Ernes | Fer |
+|---|---|---|---|---|
+| **Fede** | — | 6-4 | 1-6 | 11-10 |
+| **Chris** | 4-6 | — | — | 10-13 |
+| **Ernes** | 6-1 | — | — | 7-8 |
+| **Fer** | 10-11 | 13-10 | 8-7 | — |
+
+Son 76 partidos sin marcador (de esos sólo se sabía quién había ganado), repartidos entre febrero y
+julio de 2026. Las victorias de cada cruce están intercaladas a lo largo de la serie y no apiladas,
+para que las rachas y la curva de puntaje digan algo real.
+
+Desde ahí en adelante, todo lo que se anote se suma encima.
+
 ## Cómo se usa
 
-1. **Cargá a los jugadores** una sola vez en la pestaña *Jugadores*. Todos arrancan en 1000 puntos.
-2. **Anotá los resultados** en *Cargar*. Son tres toques:
+1. **Anotá los resultados** en *Cargar*. Son tres toques:
    - tocás a los dos que jugaron,
    - tocás al que ganó,
    - guardás.
    Si se acuerdan del marcador, hay un paso opcional: se toca cuántos puntos hizo el que perdió
    (0 a 9) y listo. Para los partidos peleados hay un botón *Deuce* que deja escribir 12-10, 13-11
    o lo que haya salido.
-3. **Mirá el ranking**. Cada resultado recalcula puestos, rachas y puntaje.
+2. **Mirá el ranking**. Cada resultado recalcula puestos, rachas y puntaje.
+3. **Sumá gente** cuando haga falta, en *Jugadores*. Los que entran arrancan en 1000 puntos.
 
-La pantalla de carga está pensada para descargar una tanda de partidos viejos de una sentada: se
-guarda, la pareja se limpia sola, y abajo queda la lista de lo recién cargado con un botón para
-deshacer si te equivocaste.
+La pantalla de carga está pensada para descargar una tanda de partidos de una sentada: se guarda,
+la pareja se limpia sola, y abajo queda la lista de lo recién cargado con un botón para deshacer si
+te equivocaste.
 
 ---
 
@@ -60,12 +78,16 @@ algo cambia. Por eso podés borrar un partido cargado por error y toda la tabla 
 ## Dónde viven los datos
 
 Todo se guarda en el `localStorage` del navegador que usás. Ventajas: no hay que crear cuenta, anda
-sin internet y nadie más ve tus datos. Contra: **la liga vive en ese navegador**.
+sin internet y nadie más ve tus datos. Contra: **la liga vive en ese navegador**. Si cada uno la
+abre en su celular, cada uno arranca del mismo historial inicial pero después sigue por su cuenta.
 
 Para moverla o compartirla, en *Jugadores → Los datos son tuyos*:
 
 - **Descargar liga**: baja un `.json` con todo.
 - **Importar archivo**: reemplaza los datos de este navegador con los de un archivo.
+
+*Empezar de cero* borra todo, incluido el historial inicial, y no se vuelve a sembrar. Si querés
+recuperarlo, importá un archivo o borrá la clave `mesa.liga.v1` del navegador.
 
 Si en algún momento quieren que todos vean la misma liga en tiempo real desde sus propios
 teléfonos, hay que agregar una base de datos. La app está preparada: toda la lectura y escritura
@@ -123,7 +145,7 @@ src/
     liga.ts               Deriva tabla, rachas, cruces y estadísticas
     store.ts              Estado + persistencia en localStorage (y migración)
     motion.ts             Presets de animación
-    demo.ts               Liga de ejemplo
+    inicial.ts            Plantel e historial con el que arranca la liga
 ```
 
 ## Ideas para más adelante

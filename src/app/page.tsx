@@ -10,7 +10,7 @@ import { Boton, Cinta, EstadoVacio, TituloSeccion } from "@/components/ui";
 import { useLiga } from "@/lib/store";
 
 export default function PaginaRanking() {
-  const { liga, hidratado, cargarDemo } = useLiga();
+  const { liga, hidratado } = useLiga();
 
   if (!hidratado) {
     return (
@@ -33,17 +33,12 @@ export default function PaginaRanking() {
           titulo="La mesa está vacía"
           detalle="Cargá a los jugadores una sola vez. Después alcanza con anotar quién le ganó a quién."
           accion={
-            <>
-              <Link href="/jugadores">
-                <Boton variante="naranja" tamano="lg">
-                  <IconoMas className="size-4" />
-                  Agregar jugadores
-                </Boton>
-              </Link>
-              <Boton variante="azul" tamano="lg" onClick={cargarDemo}>
-                Ver ejemplo
+            <Link href="/jugadores">
+              <Boton variante="naranja" tamano="lg">
+                <IconoMas className="size-4" />
+                Agregar jugadores
               </Boton>
-            </>
+            </Link>
           }
         />
       </Pagina>

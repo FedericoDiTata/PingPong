@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { computarLiga, type Liga } from "./liga";
-import { generarDemo } from "./demo";
+import { ligaInicial } from "./inicial";
 import { ESTADO_VACIO, type Estado, type Jugador, type Partido } from "./types";
 
 const CLAVE = "mesa.liga.v1";
@@ -143,8 +143,14 @@ function hidratar() {
   if (hidratacionPedida) return;
   hidratacionPedida = true;
 
+  // Navegador sin datos: se siembra el historial que ya existía en papel, y se
+  // guarda en el acto. A partir de ahí manda siempre lo que hay en disco, así
+  // que borrar un partido de la siembra no lo resucita en la próxima visita.
   const guardado = leerAlmacenado();
-  instantanea = { estado: guardado ?? instantanea.estado, hidratado: true };
+  const inicial = guardado ?? ligaInicial();
+  if (!guardado) persistir(inicial);
+
+  instantanea = { estado: inicial, hidratado: true };
 
   // Dos pestañas abiertas se mantienen sincronizadas.
   window.addEventListener("storage", (evento) => {
@@ -235,10 +241,6 @@ function importar(crudo: string): { ok: boolean; error?: string } {
   }
 }
 
-function cargarDemo() {
-  fijar(generarDemo());
-}
-
 function vaciar() {
   fijar({ ...ESTADO_VACIO });
 }
@@ -271,7 +273,6 @@ export function useLiga() {
     borrarPartido,
     exportar,
     importar,
-    cargarDemo,
     vaciar,
   };
 }

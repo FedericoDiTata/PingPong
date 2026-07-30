@@ -8,8 +8,11 @@ control: es el pizarrón del quincho.
 
 ## Usuarios
 
-Un grupo chico de amigos o compañeros con una mesa de ping pong. Entre 3 y 10 personas. Ninguno
-lleva planillas: quieren discutir quién es mejor con datos.
+Fede, Chris, Ernes y Fer. Un grupo chico con una mesa de ping pong y años de partidos llevados de
+memoria. Ninguno lleva planillas: quieren discutir quién es mejor con datos.
+
+La app no arranca vacía: viene con los 76 partidos que ya se venían contando de palabra. Una app de
+ranking que empieza en cero no tiene nada para discutir el primer día.
 
 **Escena de uso:** se juega, se cuenta en voz alta, se grita el resultado, y recién después
 alguien agarra el celular y lo anota. A veces se anotan cinco partidos juntos al final de la
@@ -51,7 +54,7 @@ Rioplatense, directo, sin solemnidad deportiva. "La mesa está vacía", "Su best
 3. **Todo se deriva de los partidos.** No se guarda ningún puntaje: se recalcula reproduciendo el
    historial. Borrar un partido mal cargado corrige la liga entera.
 4. **Sin cuentas ni servidor.** La liga vive en el navegador; el puente entre teléfonos es un
-   archivo JSON.
+   archivo JSON. Tampoco hay "datos de ejemplo": lo que se ve al abrir es el historial real.
 5. **El número es el contenido.** Marcadores y récords en tipografía gigante. Nada de números
    chiquitos con etiquetas grandes.
 6. **Que se mueva.** Rebote, estallidos, cintas corridas. La app celebra cada resultado.

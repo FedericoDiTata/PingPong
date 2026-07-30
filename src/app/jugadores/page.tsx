@@ -75,7 +75,6 @@ export default function PaginaJugadores() {
     borrarJugador,
     exportar,
     importar,
-    cargarDemo,
     vaciar,
   } = useLiga();
 
@@ -288,19 +287,19 @@ export default function PaginaJugadores() {
             className="hidden"
           />
 
-          {liga.jugadores.length === 0 ? (
-            <Boton variante="azul" onClick={cargarDemo}>
-              Cargar ejemplo
-            </Boton>
-          ) : (
-            <ConfirmarEnLinea onConfirmar={vaciar} pregunta="Se borra todo" textoConfirmar="Borrar">
+          {liga.jugadores.length > 0 ? (
+            <ConfirmarEnLinea
+              onConfirmar={vaciar}
+              pregunta={`Se borran ${liga.totalPartidos} partidos`}
+              textoConfirmar="Borrar todo"
+            >
               {(abrir) => (
                 <Boton variante="peligro" onClick={abrir}>
                   Empezar de cero
                 </Boton>
               )}
             </ConfirmarEnLinea>
-          )}
+          ) : null}
         </div>
 
         <AnimatePresence>

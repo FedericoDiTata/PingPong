@@ -7,7 +7,7 @@ import { Boton, EstadoVacio } from "@/components/ui";
 import { useLiga } from "@/lib/store";
 
 export default function PaginaCargar() {
-  const { liga, hidratado, agregarPartido, borrarPartido, cargarDemo } = useLiga();
+  const { liga, hidratado, agregarPartido, borrarPartido } = useLiga();
 
   if (!hidratado) {
     return (
@@ -26,18 +26,11 @@ export default function PaginaCargar() {
           titulo="Faltan jugadores"
           detalle="Para anotar un partido tiene que haber al menos dos personas en la liga."
           accion={
-            <>
-              <Link href="/jugadores">
-                <Boton variante="naranja" tamano="lg">
-                  Agregar jugadores
-                </Boton>
-              </Link>
-              {liga.jugadores.length === 0 ? (
-                <Boton variante="azul" tamano="lg" onClick={cargarDemo}>
-                  Ver ejemplo
-                </Boton>
-              ) : null}
-            </>
+            <Link href="/jugadores">
+              <Boton variante="naranja" tamano="lg">
+                Agregar jugadores
+              </Boton>
+            </Link>
           }
         />
       </Pagina>
