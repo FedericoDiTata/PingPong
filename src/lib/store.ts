@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { computarLiga, type Liga } from "./liga";
-import { ligaInicial } from "./inicial";
+import { esLigaDeEjemplo, ligaInicial } from "./inicial";
 import { ESTADO_VACIO, type Estado, type Jugador, type Partido } from "./types";
 
 const CLAVE = "mesa.liga.v1";
@@ -143,12 +143,14 @@ function hidratar() {
   if (hidratacionPedida) return;
   hidratacionPedida = true;
 
-  // Navegador sin datos: se siembra el historial que ya existía en papel, y se
-  // guarda en el acto. A partir de ahí manda siempre lo que hay en disco, así
-  // que borrar un partido de la siembra no lo resucita en la próxima visita.
+  // Navegador sin datos (o con la liga de ejemplo vieja pegada del release
+  // anterior): se siembra el historial que ya existía en papel y se guarda en
+  // el acto. A partir de ahí manda siempre lo que hay en disco, así que borrar
+  // un partido de la siembra no lo resucita en la próxima visita.
   const guardado = leerAlmacenado();
-  const inicial = guardado ?? ligaInicial();
-  if (!guardado) persistir(inicial);
+  const sembrar = !guardado || esLigaDeEjemplo(guardado);
+  const inicial = sembrar ? ligaInicial() : guardado;
+  if (sembrar) persistir(inicial);
 
   instantanea = { estado: inicial, hidratado: true };
 

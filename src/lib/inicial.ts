@@ -68,6 +68,22 @@ function repartir(a: string, b: string, ganoA: number, ganoB: number, rand: () =
   return serie;
 }
 
+/**
+ * Reconoce la liga de ejemplo que traía la versión anterior (Vicky, Zikiel,
+ * Tincho y compañía). Quedó guardada en los navegadores donde alguien tocó
+ * "Ver ejemplo", y como la siembra sólo corre cuando no hay nada, esos
+ * navegadores nunca llegaban a ver el historial real.
+ *
+ * Sólo se considera de ejemplo si TODOS los jugadores son de ejemplo: si
+ * alguien ya sumó gente de verdad encima, no se toca nada.
+ */
+export function esLigaDeEjemplo(estado: Estado): boolean {
+  return (
+    estado.jugadores.length > 0 &&
+    estado.jugadores.every((jugador) => jugador.id.startsWith("demo-"))
+  );
+}
+
 export function ligaInicial(): Estado {
   const rand = azar(30072026);
 
