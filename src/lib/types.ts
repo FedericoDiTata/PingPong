@@ -2,6 +2,11 @@ export type Jugador = {
   id: string;
   nombre: string;
   emoji: string;
+  /**
+   * Foto de perfil como data URL. Se guarda recortada y comprimida (256 px) para
+   * que entre en localStorage sin problemas. Si no hay foto, se usa el emoji.
+   */
+  foto?: string;
   creadoEn: string;
 };
 

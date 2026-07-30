@@ -6,7 +6,8 @@ import { golpe } from "@/lib/motion";
 
 /* ---------------------------------------------------------------- Botón --- */
 
-type VarianteBoton = "naranja" | "crema" | "azul" | "fantasma" | "peligro";
+// `fantasma` es para fondos azules; `fantasmaTinta`, para los carteles crema.
+type VarianteBoton = "naranja" | "crema" | "azul" | "fantasma" | "fantasmaTinta" | "peligro";
 type TamanoBoton = "sm" | "md" | "lg" | "xl";
 
 // Un botón apagado no es "el mismo color más transparente": eso sigue
@@ -19,6 +20,8 @@ const VARIANTES: Record<VarianteBoton, string> = {
   azul: `bg-azul-700 text-crema border-tinta shadow-[var(--golpe)] hover:bg-azul-500 ${APAGADO}`,
   fantasma:
     "bg-transparent text-crema border-crema/35 hover:border-crema hover:bg-crema/10 disabled:opacity-40",
+  fantasmaTinta:
+    "bg-transparent text-tinta/75 border-tinta/25 hover:border-tinta hover:text-tinta hover:bg-tinta/8 disabled:opacity-40",
   peligro:
     "bg-transparent text-naranja-claro border-naranja/50 hover:bg-naranja/15 disabled:opacity-40",
 };
@@ -146,40 +149,6 @@ export function TituloSeccion({
   );
 }
 
-/**
- * Cinta corrida: el zócalo de un club. Decorativa, pero con contenido real.
- * Duplica la lista para que el loop no tenga costura visible.
- */
-export function Cinta({ items, className = "" }: { items: string[]; className?: string }) {
-  if (items.length === 0) return null;
-
-  // Con pocos resultados la cinta quedaría corta y se vería el hueco.
-  const relleno: string[] = [];
-  while (relleno.length < 8) relleno.push(...items);
-
-  return (
-    <div
-      aria-hidden
-      className={`overflow-hidden border-y-[3px] border-tinta bg-naranja py-2 ${className}`}
-    >
-      <div className="flex w-max animate-cinta">
-        {[0, 1].map((copia) => (
-          <div key={copia} className="flex shrink-0">
-            {relleno.map((parte, indice) => (
-              <span
-                key={`${copia}-${indice}`}
-                className="display whitespace-nowrap px-4 text-lg text-tinta"
-              >
-                {parte} <span className="text-tinta/40">●</span>
-              </span>
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /* -------------------------------------------------------------- Confirmar --- */
 
 export function ConfirmarEnLinea({
@@ -215,7 +184,7 @@ export function ConfirmarEnLinea({
       >
         {textoConfirmar}
       </Boton>
-      <Boton tamano="sm" variante="fantasma" onClick={() => setAbierto(false)}>
+      <Boton tamano="sm" variante="fantasmaTinta" onClick={() => setAbierto(false)}>
         No
       </Boton>
     </motion.div>

@@ -62,7 +62,6 @@
 
   --animate-tiembla: tiembla 0.5s var(--ease-quart) infinite;
   --animate-late: late 1.6s var(--ease-quart) infinite;
-  --animate-cinta: cinta 22s linear infinite;
 }
 
 :root {
@@ -210,15 +209,6 @@ input[type="number"] {
   }
   50% {
     transform: scale(1.12);
-  }
-}
-
-@keyframes cinta {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
   }
 }
 

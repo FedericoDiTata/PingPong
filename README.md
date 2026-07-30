@@ -40,6 +40,10 @@ Desde ahí en adelante, todo lo que se anote se suma encima.
 2. **Mirá el ranking**. Cada resultado recalcula puestos, rachas y puntaje.
 3. **Sumá gente** cuando haga falta, en *Jugadores*. Los que entran arrancan con 50 puntos.
 
+En *Jugadores*, el lápiz de cada uno abre el editor: se le puede cambiar el nombre, el emoji o
+**subir una foto de perfil**. La foto se recorta en cuadrado y se achica a 256 px antes de
+guardarse, así la liga entera sigue entrando cómoda en el navegador.
+
 La pantalla de carga está pensada para descargar una tanda de partidos de una sentada: se guarda,
 la pareja se limpia sola, y abajo queda la lista de lo recién cargado con un botón para deshacer si
 te equivocaste.
@@ -138,7 +142,7 @@ Una vez publicada, desde el celular se puede agregar a la pantalla de inicio y s
 ```
 src/
   app/
-    page.tsx              Ranking: cinta de resultados, podio y tabla
+    page.tsx              Ranking: podio de cuatro y tabla de posiciones
     cargar/               Carga de resultados (la pantalla principal de uso)
     historial/            Todos los partidos, agrupados por día
     jugadores/            Alta, edición, respaldo e importación
@@ -148,6 +152,7 @@ src/
   lib/
     types.ts              Modelo de datos
     elo.ts                Cálculo del puntaje
+    foto.ts               Recorte y compresión de las fotos de perfil
     liga.ts               Deriva tabla, rachas, cruces y estadísticas
     store.ts              Estado + persistencia en localStorage (y migración)
     motion.ts             Presets de animación

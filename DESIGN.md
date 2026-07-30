@@ -77,7 +77,7 @@ Además:
 
 - **Estallido de partículas** (`Explosion`) al guardar un resultado: 28 fichas con borde que salen
   radialmente y caen. Sin librería, con semilla determinística para no romper la pureza del render.
-- **Cinta corrida** con los últimos resultados en la home.
+- **Podio de cuatro escalones** que crecen desde abajo con rebote.
 - **Hamacado continuo** (`animate-tiembla`) en el cartel de "Rey de la mesa".
 - **Respiración** del botón de guardar cuando ya se puede guardar.
 - Hover de tarjetas: suben 3-4px y rotan medio grado.

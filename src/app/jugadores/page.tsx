@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Avatar } from "@/components/Avatar";
+import { EditorJugador } from "@/components/EditorJugador";
 import {
   IconoBasura,
-  IconoCheck,
   IconoDescargar,
   IconoImportar,
   IconoLapiz,
@@ -81,7 +81,6 @@ export default function PaginaJugadores() {
   const [nombre, setNombre] = useState("");
   const [emoji, setEmoji] = useState<string>(EMOJIS[0]);
   const [editando, setEditando] = useState<string | null>(null);
-  const [nombreEditado, setNombreEditado] = useState("");
   const [aviso, setAviso] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
   const archivoRef = useRef<HTMLInputElement>(null);
 
@@ -180,30 +179,18 @@ export default function PaginaJugadores() {
                   transition={{ ...resorte, delay: escalonar(indice, 0.03) }}
                   className="cartel flex flex-wrap items-center gap-3 rounded-md px-3 py-3"
                 >
-                  <Avatar jugador={jugador} tamano="sm" />
-
                   {editando === jugador.id ? (
-                    <form
-                      className="flex flex-1 items-center gap-2"
-                      onSubmit={(evento) => {
-                        evento.preventDefault();
-                        editarJugador(jugador.id, { nombre: nombreEditado });
+                    <EditorJugador
+                      jugador={jugador}
+                      onCancelar={() => setEditando(null)}
+                      onGuardar={(cambios) => {
+                        editarJugador(jugador.id, cambios);
                         setEditando(null);
                       }}
-                    >
-                      <input
-                        autoFocus
-                        value={nombreEditado}
-                        maxLength={18}
-                        onChange={(evento) => setNombreEditado(evento.target.value)}
-                        className="display h-11 min-w-0 flex-1 rounded-sm border-[3px] border-tinta bg-naranja-claro px-3 text-xl text-tinta outline-none"
-                      />
-                      <Boton type="submit" tamano="sm" variante="naranja">
-                        <IconoCheck className="size-4" />
-                      </Boton>
-                    </form>
+                    />
                   ) : (
                     <>
+                      <Avatar jugador={jugador} tamano="sm" />
                       <Link
                         href={`/jugador/${jugador.id}`}
                         className="display min-w-0 flex-1 truncate text-2xl text-tinta hover:text-naranja-hondo"
@@ -227,11 +214,8 @@ export default function PaginaJugadores() {
                       </span>
 
                       <button
-                        onClick={() => {
-                          setEditando(jugador.id);
-                          setNombreEditado(jugador.nombre);
-                        }}
-                        aria-label={`Renombrar a ${jugador.nombre}`}
+                        onClick={() => setEditando(jugador.id)}
+                        aria-label={`Editar a ${jugador.nombre}`}
                         className="rounded-sm p-1.5 text-tinta/35 transition-colors duration-100 hover:text-tinta"
                       >
                         <IconoLapiz className="size-4" />

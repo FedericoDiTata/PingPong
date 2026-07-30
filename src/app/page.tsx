@@ -6,7 +6,7 @@ import { IconoMas } from "@/components/Iconos";
 import { Cargando, Encabezado, Pagina } from "@/components/Pagina";
 import { Podio, TablaPosiciones } from "@/components/Ranking";
 import { TarjetaPartido } from "@/components/TarjetaPartido";
-import { Boton, Cinta, EstadoVacio, TituloSeccion } from "@/components/ui";
+import { Boton, EstadoVacio, TituloSeccion } from "@/components/ui";
 import { useLiga } from "@/lib/store";
 
 export default function PaginaRanking() {
@@ -70,14 +70,6 @@ export default function PaginaRanking() {
 
   const lider = liga.tabla[0];
 
-  const titulares = liga.recientes.slice(0, 8).map((resultado) => {
-    const ganador = liga.porId[resultado.ganadorId]?.nombre ?? "";
-    const perdedor = liga.porId[resultado.perdedorId]?.nombre ?? "";
-    return resultado.puntosGanador !== null
-      ? `${ganador} ${resultado.puntosGanador}-${resultado.puntosPerdedor} ${perdedor}`
-      : `${ganador} le ganó a ${perdedor}`;
-  });
-
   return (
     <Pagina>
       <Encabezado
@@ -93,8 +85,6 @@ export default function PaginaRanking() {
           </Link>
         }
       />
-
-      <Cinta items={titulares} className="mb-10 -rotate-1" />
 
       <Podio tabla={liga.tabla} />
 

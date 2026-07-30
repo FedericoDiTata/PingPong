@@ -1,12 +1,15 @@
 import type { Estado, Jugador, Partido } from "./types";
 
 /**
- * La liga arranca con el historial que ya venía anotado a mano.
+ * La liga arranca con el historial que ya se venía llevando de memoria.
  *
- * De estos partidos sólo se sabe quién ganó: son los que se venían llevando de
- * memoria, sin marcador. Los cruces están cargados como totales acumulados y
- * acá se reparten en partidos sueltos, porque el ranking necesita un orden
- * para ir moviendo el puntaje.
+ * De estos partidos sólo se sabe quién ganó: ni el marcador ni la fecha. Los
+ * cruces están cargados como totales acumulados y acá se reparten en partidos
+ * sueltos, porque el ranking necesita un orden para ir moviendo el puntaje.
+ *
+ * Ese orden es una reconstrucción razonable, no un dato: lo único que se
+ * respeta es que cada cruce termine con los totales reales. Las fechas son
+ * todas la del día en que se cargó el historial, que es lo único cierto.
  */
 
 const PLANTEL: Array<Omit<Jugador, "creadoEn">> = [
@@ -25,9 +28,12 @@ const CRUCES: Array<{ a: string; b: string; ganoA: number; ganoB: number }> = [
   { a: "ernes", b: "fede", ganoA: 6, ganoB: 1 },
 ];
 
-/** Ventana en la que se reparten los partidos viejos. */
-const DESDE = Date.UTC(2026, 1, 16, 19, 0);
-const HASTA = Date.UTC(2026, 6, 28, 19, 0);
+/**
+ * Todos los partidos del historial llevan la fecha en que se cargaron, no la
+ * del día en que se jugaron: de esos partidos nadie se acuerda la fecha, y
+ * repartirlos por el calendario sería inventar un dato que no tenemos.
+ */
+const CARGADOS_EL = Date.UTC(2026, 6, 30, 15, 0);
 
 function azar(semilla: number) {
   let estado = semilla >>> 0;
@@ -87,9 +93,9 @@ export function esLigaDeEjemplo(estado: Estado): boolean {
 export function ligaInicial(): Estado {
   const rand = azar(30072026);
 
-  const jugadores: Jugador[] = PLANTEL.map((persona, indice) => ({
+  const jugadores: Jugador[] = PLANTEL.map((persona) => ({
     ...persona,
-    creadoEn: new Date(DESDE - (PLANTEL.length - indice) * 86_400_000).toISOString(),
+    creadoEn: new Date(CARGADOS_EL).toISOString(),
   }));
 
   // Cada cruce es una cola que mantiene su orden interno.
@@ -116,16 +122,15 @@ export function ligaInicial(): Estado {
     }
   }
 
-  const paso = (HASTA - DESDE) / Math.max(orden.length - 1, 1);
-
   const partidos: Partido[] = orden.map((duelo, indice) => ({
-    id: `historial-${indice + 1}`,
+    // El id lleva el número con ceros adelante para que, al tener todos la
+    // misma fecha, el desempate alfabético respete el orden en que se jugaron.
+    // De ese orden depende cómo se movió el puntaje.
+    id: `historial-${String(indice + 1).padStart(3, "0")}`,
     jugadorA: duelo.a,
     jugadorB: duelo.b,
     ganador: duelo.ganador,
-    // Repartidos parejo en la ventana, con un desvío de hasta medio paso para
-    // que no queden clavados a intervalos exactos.
-    jugadoEn: new Date(DESDE + paso * indice + (rand() - 0.5) * paso).toISOString(),
+    jugadoEn: new Date(CARGADOS_EL).toISOString(),
   }));
 
   return { version: 2, jugadores, partidos };

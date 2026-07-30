@@ -194,7 +194,7 @@ function agregarJugador(nombre: string, emoji: string): Jugador | null {
   return jugador;
 }
 
-function editarJugador(id: string, cambios: Partial<Pick<Jugador, "nombre" | "emoji">>) {
+function editarJugador(id: string, cambios: Partial<Pick<Jugador, "nombre" | "emoji" | "foto">>) {
   actualizar((previo) => ({
     ...previo,
     jugadores: previo.jugadores.map((jugador) =>

@@ -12,13 +12,14 @@ import type { FilaTabla } from "@/lib/liga";
 /* ---------------------------------------------------------------- Podio --- */
 
 const ESCALONES = [
-  { alto: "h-32 md:h-44", fondo: "bg-naranja", texto: "text-tinta" },
-  { alto: "h-24 md:h-32", fondo: "bg-crema", texto: "text-tinta" },
-  { alto: "h-20 md:h-26", fondo: "bg-azul-700", texto: "text-crema" },
+  { alto: "h-28 md:h-44", fondo: "bg-naranja", texto: "text-tinta" },
+  { alto: "h-22 md:h-32", fondo: "bg-crema", texto: "text-tinta" },
+  { alto: "h-18 md:h-26", fondo: "bg-azul-700", texto: "text-crema" },
+  { alto: "h-14 md:h-20", fondo: "bg-azul-950", texto: "text-crema" },
 ];
 
 function Escalon({ fila, puesto }: { fila: FilaTabla; puesto: number }) {
-  const estilo = ESCALONES[puesto - 1];
+  const estilo = ESCALONES[puesto - 1] ?? ESCALONES[ESCALONES.length - 1];
   const lider = puesto === 1;
 
   return (
@@ -29,16 +30,22 @@ function Escalon({ fila, puesto }: { fila: FilaTabla; puesto: number }) {
         transition={{ ...resorte, delay: 0.15 + puesto * 0.09 }}
         className="flex min-w-0 flex-col items-center gap-2"
       >
-        <Avatar jugador={fila.jugador} tamano={lider ? "lg" : "md"} />
+        <Avatar
+          jugador={fila.jugador}
+          tamano={lider ? "md" : "sm"}
+          tamanoAncho={lider ? "lg" : "md"}
+        />
         <Link
           href={`/jugador/${fila.jugador.id}`}
           className={`display max-w-full truncate px-1 text-center leading-none text-crema hover:text-naranja ${
-            lider ? "text-xl md:text-2xl" : "text-base md:text-lg"
+            lider ? "text-lg md:text-2xl" : "text-sm md:text-lg"
           }`}
         >
           {fila.jugador.nombre}
         </Link>
-        <span className="rotulo text-crema/55">{fila.pg}G · {fila.pp}P</span>
+        <span className="rotulo text-crema/55">
+          {fila.pg}G · {fila.pp}P
+        </span>
       </motion.div>
 
       <motion.div
@@ -55,13 +62,15 @@ function Escalon({ fila, puesto }: { fila: FilaTabla; puesto: number }) {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ ...golpe, delay: 0.5 }}
-              className="display block rounded-sm border-2 border-tinta bg-crema px-2 py-0.5 text-xs text-tinta"
+              className="display block whitespace-nowrap rounded-sm border-2 border-tinta bg-crema px-1.5 py-0.5 text-[10px] text-tinta md:px-2 md:text-xs"
             >
-              Rey de la mesa
+              {/* En cuatro columnas el nombre largo no entra en el celular. */}
+              <span className="md:hidden">Rey</span>
+              <span className="hidden md:inline">Rey de la mesa</span>
             </motion.span>
           </span>
         ) : null}
-        <span className={`display text-4xl md:text-5xl ${estilo.texto}`}>{puesto}</span>
+        <span className={`display text-3xl md:text-5xl ${estilo.texto}`}>{puesto}</span>
         <span className={`rotulo ${estilo.texto} opacity-70`}>{fila.puntos} pts</span>
       </motion.div>
     </div>
@@ -69,14 +78,16 @@ function Escalon({ fila, puesto }: { fila: FilaTabla; puesto: number }) {
 }
 
 export function Podio({ tabla }: { tabla: FilaTabla[] }) {
-  const podio = tabla.slice(0, 3);
+  const podio = tabla.slice(0, 4);
   if (podio.length === 0) return null;
 
-  const orden = [podio[1], podio[0], podio[2]].filter(Boolean);
+  // 2º a la izquierda, 1º al centro y de ahí para abajo: la silueta clásica
+  // del podio, con el 4º cerrando el escalón más bajo.
+  const orden = [podio[1], podio[0], podio[2], podio[3]].filter(Boolean);
 
   return (
     <section aria-label="Podio" className="mb-12">
-      <div className="flex items-end justify-center gap-2 md:gap-4">
+      <div className="flex items-end justify-center gap-1.5 md:gap-4">
         {orden.map((fila) => (
           <Escalon key={fila.jugador.id} fila={fila} puesto={fila.puesto} />
         ))}
