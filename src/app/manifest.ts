@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Mesa · liga de ping pong",
-    short_name: "Mesa",
+    name: "Ping Pong · la liga",
+    short_name: "Ping Pong",
     description:
       "Ranking, historial y estadísticas de los partidos de ping pong entre amigos.",
     start_url: "/",

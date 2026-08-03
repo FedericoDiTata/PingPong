@@ -19,11 +19,11 @@ const sans = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: "Mesa · liga de ping pong",
+  title: "Ping Pong · la liga",
   description:
     "Quién le ganó a quién. Ranking, historial y estadísticas de los partidos de ping pong entre amigos.",
-  applicationName: "Mesa",
-  appleWebApp: { capable: true, title: "Mesa", statusBarStyle: "black-translucent" },
+  applicationName: "Ping Pong",
+  appleWebApp: { capable: true, title: "Ping Pong", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {

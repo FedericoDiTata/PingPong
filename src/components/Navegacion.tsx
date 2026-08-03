@@ -18,27 +18,48 @@ function esActiva(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function LogoMesa({ className = "" }: { className?: string }) {
+/**
+ * Una paleta: mango primero, cabeza encima. Van paradas y apenas inclinadas
+ * hacia afuera, sin cruzarse: cruzadas, a 28 px los contornos se juntan en una
+ * sola mancha y no se entiende qué son.
+ */
+function Paleta({ x, giro, color }: { x: number; giro: number; color: string }) {
   return (
-    <svg viewBox="0 0 26 26" className={className} fill="none" aria-hidden>
+    <g transform={`translate(${x} 14.5) rotate(${giro})`}>
       <rect
-        x="2"
-        y="8.5"
-        width="22"
-        height="14"
-        rx="2"
-        fill="var(--color-azul-700)"
+        x="-1.8"
+        y="2.4"
+        width="3.6"
+        height="9"
+        rx="1.6"
+        fill="var(--color-hueso)"
         stroke="var(--color-tinta)"
-        strokeWidth="2.5"
+        strokeWidth="1.8"
       />
-      <path d="M13 8.5v14" stroke="var(--color-tinta)" strokeWidth="2.5" strokeDasharray="2.5 2.5" />
-      <circle
-        cx="19"
-        cy="4.5"
-        r="3.4"
-        fill="var(--color-naranja)"
+      <ellipse
+        cy="-2.4"
+        rx="4.8"
+        ry="5.4"
+        fill={color}
         stroke="var(--color-tinta)"
-        strokeWidth="2.5"
+        strokeWidth="1.8"
+      />
+    </g>
+  );
+}
+
+export function LogoPingPong({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} fill="none" aria-hidden>
+      <Paleta x={10} giro={-14} color="var(--color-naranja)" />
+      <Paleta x={22} giro={14} color="var(--color-crema)" />
+      <circle
+        cx="16"
+        cy="6"
+        r="2.6"
+        fill="var(--color-crema)"
+        stroke="var(--color-tinta)"
+        strokeWidth="1.8"
       />
     </svg>
   );
@@ -51,9 +72,11 @@ export function BarraSuperior() {
   return (
     <header className="sticky top-0 z-30 border-b-[3px] border-tinta bg-azul-950/95 backdrop-blur-sm">
       <div className="mx-auto flex h-16 w-full max-w-5xl items-center gap-6 px-4 md:px-8">
-        <Link href="/" className="flex items-center gap-2.5">
-          <LogoMesa className="size-7" />
-          <span className="display text-2xl text-crema">Mesa</span>
+        <Link href="/" className="flex shrink-0 items-center gap-2.5">
+          <LogoPingPong className="size-8" />
+          <span className="display whitespace-nowrap text-xl text-crema md:text-2xl">
+            Ping Pong
+          </span>
         </Link>
 
         <nav className="ml-2 hidden items-center gap-1 md:flex">

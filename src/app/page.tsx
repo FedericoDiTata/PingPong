@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { IconoMas } from "@/components/Iconos";
+import { ManoAMano } from "@/components/ManoAMano";
 import { Cargando, Encabezado, Pagina } from "@/components/Pagina";
 import { Podio, TablaPosiciones } from "@/components/Ranking";
-import { TarjetaPartido } from "@/components/TarjetaPartido";
 import { Boton, EstadoVacio, TituloSeccion } from "@/components/ui";
 import { useLiga } from "@/lib/store";
 
@@ -68,7 +68,9 @@ export default function PaginaRanking() {
     );
   }
 
-  const lider = liga.tabla[0];
+  // El podio muestra cuatro: si hay más jugadores, del quinto para abajo
+  // seguimos necesitando la tabla.
+  const resto = liga.tabla.slice(4);
 
   return (
     <Pagina>
@@ -88,15 +90,16 @@ export default function PaginaRanking() {
 
       <Podio tabla={liga.tabla} />
 
-      {lider && lider.racha.tipo === "G" && lider.racha.largo >= 2 ? (
-        <p className="mb-8 text-center text-base font-bold text-crema/70">
-          <span className="text-crema">{lider.jugador.nombre}</span> manda la mesa con{" "}
-          <span className="display text-naranja">{lider.racha.largo}</span> victorias al hilo.
-        </p>
+      {resto.length > 0 ? (
+        <section className="mb-14">
+          <TituloSeccion rotulo="La tabla" titulo="Del quinto para abajo" />
+          <TablaPosiciones tabla={resto} />
+        </section>
       ) : null}
 
       <section className="mb-14">
-        <TablaPosiciones tabla={liga.tabla} />
+        <TituloSeccion rotulo="Cara a cara" titulo="Mano a mano" />
+        <ManoAMano liga={liga} />
       </section>
 
       {liga.sinJugar.length > 0 ? (
@@ -118,30 +121,6 @@ export default function PaginaRanking() {
         </section>
       ) : null}
 
-      <section>
-        <TituloSeccion
-          rotulo="Lo último"
-          titulo="Últimos partidos"
-          accion={
-            <Link
-              href="/historial"
-              className="text-2xs font-bold uppercase tracking-[0.12em] text-naranja hover:text-naranja-claro"
-            >
-              Ver todo →
-            </Link>
-          }
-        />
-        <div className="flex flex-col gap-2.5">
-          {liga.recientes.slice(0, 5).map((resultado, indice) => (
-            <TarjetaPartido
-              key={resultado.partido.id}
-              resultado={resultado}
-              liga={liga}
-              indice={indice}
-            />
-          ))}
-        </div>
-      </section>
     </Pagina>
   );
 }
