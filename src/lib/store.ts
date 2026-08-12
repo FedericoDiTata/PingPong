@@ -19,12 +19,22 @@ type Instantanea = {
   hidratado: boolean;
   /** false si la última escritura en el navegador falló (cuota, modo privado). */
   guardado: boolean;
+  /**
+   * true si al abrir no había nada guardado y hubo que sembrar la liga inicial.
+   *
+   * Importa avisarlo: la siembra deja la app igual de poblada que siempre, así
+   * que perder todos los datos se ve exactamente igual que abrirla por primera
+   * vez. Lo único que falta son las fotos, los nombres cambiados y los partidos
+   * nuevos, y sin este dato parece que la app se los comió.
+   */
+  sembrada: boolean;
 };
 
 const INSTANTANEA_SERVIDOR: Instantanea = {
   estado: ESTADO_VACIO,
   hidratado: false,
   guardado: true,
+  sembrada: false,
 };
 
 let instantanea: Instantanea = INSTANTANEA_SERVIDOR;
@@ -145,7 +155,7 @@ function persistir(estado: Estado): boolean {
 
 function fijar(estado: Estado, guardar = true) {
   const guardado = guardar ? persistir(estado) : instantanea.guardado;
-  instantanea = { estado, hidratado: true, guardado };
+  instantanea = { estado, hidratado: true, guardado, sembrada: instantanea.sembrada };
   emitir();
 }
 
@@ -170,6 +180,7 @@ function hidratar() {
     estado: inicial,
     hidratado: true,
     guardado: sembrar ? persistir(inicial) : true,
+    sembrada: sembrar,
   };
 
   // Dos pestañas abiertas se mantienen sincronizadas.
@@ -280,12 +291,17 @@ function ligaDe(estado: Estado): Liga {
 }
 
 export function useLiga() {
-  const { estado, hidratado, guardado } = useSyncExternalStore(suscribir, leer, leerEnServidor);
+  const { estado, hidratado, guardado, sembrada } = useSyncExternalStore(
+    suscribir,
+    leer,
+    leerEnServidor,
+  );
 
   return {
     estado,
     hidratado,
     guardado,
+    sembrada,
     liga: ligaDe(estado),
     agregarJugador,
     editarJugador,

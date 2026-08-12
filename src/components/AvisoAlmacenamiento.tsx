@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
+import { useState } from "react";
 import { resorte } from "@/lib/motion";
 import { useLiga } from "@/lib/store";
 
@@ -12,12 +13,41 @@ import { useLiga } from "@/lib/store";
  * se entera de que perdió lo que cargó recién la próxima vez que abre.
  */
 export function AvisoAlmacenamiento() {
-  const { hidratado, guardado } = useLiga();
+  const { hidratado, guardado, sembrada } = useLiga();
+  const [visto, setVisto] = useState(false);
+
+  const direccion = typeof window === "undefined" ? "" : window.location.host;
 
   return (
     <AnimatePresence>
+      {hidratado && guardado && sembrada && !visto ? (
+        <motion.aside
+          key="sembrada"
+          role="status"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={resorte}
+          className="cartel fixed inset-x-3 bottom-24 z-40 mx-auto max-w-lg rounded-md px-4 py-3 md:bottom-5"
+        >
+          <p className="display text-lg text-tinta">Liga nueva en {direccion}</p>
+          <p className="mt-1 text-xs font-bold leading-relaxed text-tinta/70">
+            Acá no había nada guardado, así que se cargó el historial inicial. Si esperabas
+            encontrar tus fotos y los partidos que anotaste, están en la dirección donde los
+            cargaste: el navegador guarda por dirección exacta, puerto incluido.
+          </p>
+          <button
+            onClick={() => setVisto(true)}
+            className="mt-2 text-2xs font-black uppercase tracking-[0.12em] text-tinta/50 underline underline-offset-2 hover:text-tinta"
+          >
+            Entendido
+          </button>
+        </motion.aside>
+      ) : null}
+
       {hidratado && !guardado ? (
         <motion.aside
+          key="sin-guardar"
           role="alert"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
