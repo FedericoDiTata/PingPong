@@ -14,11 +14,9 @@
  */
 export const FOTOS: Record<string, string> = {
   fede: "/jugadores/fede.jpg",
+  chris: "/jugadores/chris.jpg",
   ernes: "/jugadores/ernes.jpg",
   fer: "/jugadores/fer.jpg",
-  // Chris todavía no mandó la suya: mientras tanto le queda su emoji. Cuando
-  // aparezca, va el archivo en public/jugadores/chris.jpg y se descomenta.
-  // chris: "/jugadores/chris.jpg",
 };
 
 export function fotoDe(jugadorId: string): string | undefined {
