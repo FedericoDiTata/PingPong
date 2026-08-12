@@ -143,12 +143,31 @@ mirar un cambio antes de publicarlo, pero cada una tiene su propio almacenamient
 
 Una vez publicada, desde el celular se puede agregar a la pantalla de inicio y se abre como una app.
 
-### Lo que todavía no resuelve
+---
 
-Cada navegador tiene su propia copia de la liga, incluso en la misma dirección: si cargás un
-partido en la compu, no aparece en tu celular ni en el de los demás. Para que los cuatro vean lo
-mismo hace falta una base de datos. Está preparado para eso: toda la lectura y escritura pasa por
-`src/lib/store.ts`.
+## Liga compartida (Supabase)
+
+Mientras los datos vivan en el navegador, cada uno tiene su propia copia: un partido cargado en la
+compu no aparece en el celular ni en el de los demás. Para que los cuatro vean lo mismo hace falta
+una base de datos.
+
+Pasos, una sola vez:
+
+1. Crear una cuenta en [supabase.com](https://supabase.com) y un proyecto nuevo (el plan gratis
+   sobra). Anotar la contraseña de la base que pide al crearlo, aunque la app no la use.
+2. En el proyecto, ir a **SQL Editor → New query**, pegar todo el contenido de
+   [`supabase/schema.sql`](supabase/schema.sql) y darle **Run**. Eso crea las dos tablas con sus
+   reglas y deja prendido el tiempo real.
+3. Ir a **Project Settings → API Keys** y copiar dos cosas: la **Project URL** y la clave
+   **pública** (dice `anon` o `publishable`). La clave `service_role` / `secret` no se usa acá y no
+   hay que compartirla nunca.
+4. En la raíz del proyecto, copiar `.env.example` como `.env.local` y pegar esos dos valores.
+5. Para que ande también en Vercel: **Project Settings → Environment Variables**, agregar las
+   mismas dos variables y volver a desplegar.
+
+> **Sobre la seguridad:** la app no tiene cuentas ni contraseñas, así que las tablas quedan
+> abiertas para cualquiera que tenga el link. Para una liga de ping pong entre amigos está bien;
+> no guardes nada privado ahí.
 
 ---
 
