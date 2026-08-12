@@ -10,56 +10,22 @@ import { useLiga } from "@/lib/store";
 /**
  * Carteles sobre dónde y si se están guardando los datos.
  *
- * Sin esto la app miente: si no puede guardar, sigue andando con todo en
- * memoria; y si la abriste en una dirección nueva, la liga sembrada la deja
- * igual de poblada que siempre. En los dos casos el usuario se entera de que
- * perdió lo suyo mucho después.
- *
- * Con la liga en Supabase, los avisos de dirección dejan de tener sentido
- * (los datos ya no dependen del navegador) y sólo queda el de conexión.
+ * Sin esto la app miente por partida doble: si el navegador rechaza guardar,
+ * sigue andando con todo en memoria; y si la abriste en una dirección nueva,
+ * la liga sembrada la deja igual de poblada que siempre. En los dos casos el
+ * usuario se entera de que perdió lo suyo recién mucho después.
  */
 export function AvisoAlmacenamiento() {
-  const { hidratado, guardado, sembrada, compartida } = useLiga();
+  const { hidratado, guardado, sembrada } = useLiga();
   const [visto, setVisto] = useState(false);
 
   const direccion = typeof window === "undefined" ? "" : window.location.host;
 
   return (
     <AnimatePresence>
-      {hidratado && !guardado ? (
-        <motion.aside
-          key="sin-guardar"
-          role="alert"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={resorte}
-          className="cartel fixed inset-x-3 bottom-24 z-40 mx-auto max-w-lg rounded-md px-4 py-3 md:bottom-5"
-        >
-          <p className="display text-lg text-tinta">No se está guardando</p>
-          <p className="mt-1 text-xs font-bold leading-relaxed text-tinta/70">
-            {compartida ? (
-              <>
-                No se pudo llegar a la base de datos. Lo que cargues ahora se ve sólo en este
-                teléfono y no le llega a los demás. Revisá la conexión y volvé a entrar.
-              </>
-            ) : (
-              <>
-                Este navegador rechazó guardar la liga: lo que cargues ahora se pierde al cerrar la
-                página. Puede ser modo incógnito o falta de espacio.{" "}
-                <Link href="/jugadores" className="underline underline-offset-2 hover:text-tinta">
-                  Descargá una copia
-                </Link>{" "}
-                antes de seguir.
-              </>
-            )}
-          </p>
-        </motion.aside>
-      ) : null}
-
-      {/* Los dos avisos que siguen son sobre el guardado por dirección, que es
-          un problema exclusivo de la liga guardada en el navegador. */}
-      {hidratado && !compartida && esVistaPrevia && !visto ? (
+      {/* La vista previa explica por sí sola por qué no está nada: tiene
+          prioridad sobre el aviso genérico de liga nueva. */}
+      {hidratado && esVistaPrevia && !visto ? (
         <motion.aside
           key="vista-previa"
           role="alert"
@@ -92,7 +58,7 @@ export function AvisoAlmacenamiento() {
         </motion.aside>
       ) : null}
 
-      {hidratado && !compartida && guardado && sembrada && !esVistaPrevia && !visto ? (
+      {hidratado && guardado && sembrada && !esVistaPrevia && !visto ? (
         <motion.aside
           key="sembrada"
           role="status"
@@ -114,6 +80,28 @@ export function AvisoAlmacenamiento() {
           >
             Entendido
           </button>
+        </motion.aside>
+      ) : null}
+
+      {hidratado && !guardado ? (
+        <motion.aside
+          key="sin-guardar"
+          role="alert"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={resorte}
+          className="cartel fixed inset-x-3 bottom-24 z-40 mx-auto max-w-lg rounded-md px-4 py-3 md:bottom-5"
+        >
+          <p className="display text-lg text-tinta">No se está guardando</p>
+          <p className="mt-1 text-xs font-bold leading-relaxed text-tinta/70">
+            Este navegador rechazó guardar la liga: lo que cargues ahora se pierde al cerrar la
+            página. Puede ser modo incógnito o falta de espacio.{" "}
+            <Link href="/jugadores" className="underline underline-offset-2 hover:text-tinta">
+              Descargá una copia
+            </Link>{" "}
+            antes de seguir.
+          </p>
         </motion.aside>
       ) : null}
     </AnimatePresence>

@@ -77,7 +77,6 @@ export default function PaginaJugadores() {
     exportar,
     importar,
     vaciar,
-    compartida,
   } = useLiga();
 
   const [nombre, setNombre] = useState("");
@@ -253,25 +252,15 @@ export default function PaginaJugadores() {
       <section className="border-t-[3px] border-tinta pt-10">
         <TituloSeccion rotulo="Respaldo" titulo="Los datos son tuyos" />
         <p className="mb-4 max-w-[62ch] text-sm font-medium leading-relaxed text-crema/65">
-          {compartida ? (
-            <>
-              La liga es una sola para todos: vive en la base de datos y se sincroniza sola entre
-              los teléfonos. Igual podés descargarte una copia cuando quieras.
-            </>
-          ) : (
-            <>
-              La liga vive en este navegador: no hay cuentas ni servidor. Descargá el archivo para
-              tener una copia o para que otro la abra en su celular.
-            </>
-          )}
+          La liga vive en este navegador: no hay cuentas ni servidor. Descargá el archivo para tener
+          una copia o para que otro la abra en su celular.
         </p>
 
-        {/* Sin base compartida la dirección importa: el navegador guarda por
-            dirección exacta, así que otro puerto u otra URL son otra app. */}
+        {/* La dirección importa: el navegador guarda por dirección exacta, así
+            que otro puerto u otra URL de Vercel son, para él, otra app. */}
         <p className="mb-6 max-w-[62ch] text-2xs font-bold uppercase tracking-[0.1em] text-crema/40">
-          {compartida
-            ? "Liga compartida · sincronizada entre todos"
-            : `Guardando en ${typeof window === "undefined" ? "este navegador" : window.location.host} · ${nombreDelEntorno}`}
+          Guardando en {typeof window === "undefined" ? "este navegador" : window.location.host} ·{" "}
+          {nombreDelEntorno}
         </p>
 
         <div className="flex flex-wrap gap-3">
