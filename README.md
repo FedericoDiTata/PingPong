@@ -40,9 +40,8 @@ Desde ahí en adelante, todo lo que se anote se suma encima.
 2. **Mirá el ranking**. Cada resultado recalcula puestos, rachas y puntaje.
 3. **Sumá gente** cuando haga falta, en *Jugadores*. Los que entran arrancan con 50 puntos.
 
-En *Jugadores*, el lápiz de cada uno abre el editor: se le puede cambiar el nombre, el emoji o
-**subir una foto de perfil**. La foto se recorta en cuadrado y se achica a 256 px antes de
-guardarse, así la liga entera sigue entrando cómoda en el navegador.
+En *Jugadores*, el lápiz de cada uno abre el editor para cambiarle el nombre o el emoji. Las fotos
+de perfil no se tocan desde la app: son archivos del proyecto (ver más abajo).
 
 La pantalla de carga está pensada para descargar una tanda de partidos de una sentada: se guarda,
 la pareja se limpia sola, y abajo queda la lista de lo recién cargado con un botón para deshacer si
@@ -145,29 +144,28 @@ Una vez publicada, desde el celular se puede agregar a la pantalla de inicio y s
 
 ---
 
-## Liga compartida (Supabase)
+## Las fotos de perfil
 
-Mientras los datos vivan en el navegador, cada uno tiene su propia copia: un partido cargado en la
-compu no aparece en el celular ni en el de los demás. Para que los cuatro vean lo mismo hace falta
-una base de datos.
+Están en `public/jugadores/`, una por jugador, y se despliegan junto con la app. Eso las hace
+inmunes al problema de siempre: no dependen del navegador, así que se ven igual en todos los
+teléfonos, en todas las direcciones y sin importar cuántas veces se limpie el almacenamiento.
 
-Pasos, una sola vez:
+El precio es que no se cambian desde la app. Para agregar o reemplazar una:
 
-1. Crear una cuenta en [supabase.com](https://supabase.com) y un proyecto nuevo (el plan gratis
-   sobra). Anotar la contraseña de la base que pide al crearlo, aunque la app no la use.
-2. En el proyecto, ir a **SQL Editor → New query**, pegar todo el contenido de
-   [`supabase/schema.sql`](supabase/schema.sql) y darle **Run**. Eso crea las dos tablas con sus
-   reglas y deja prendido el tiempo real.
-3. Ir a **Project Settings → API Keys** y copiar dos cosas: la **Project URL** y la clave
-   **pública** (dice `anon` o `publishable`). La clave `service_role` / `secret` no se usa acá y no
-   hay que compartirla nunca.
-4. En la raíz del proyecto, copiar `.env.example` como `.env.local` y pegar esos dos valores.
-5. Para que ande también en Vercel: **Project Settings → Environment Variables**, agregar las
-   mismas dos variables y volver a desplegar.
+1. Poner el archivo en `public/jugadores/` (cuadrado, 512 px va bien).
+2. Agregar la línea correspondiente en [`src/lib/fotos.ts`](src/lib/fotos.ts), donde la clave es el
+   **id** del jugador, no su nombre: así renombrar a alguien no le cambia la cara.
 
-> **Sobre la seguridad:** la app no tiene cuentas ni contraseñas, así que las tablas quedan
-> abiertas para cualquiera que tenga el link. Para una liga de ping pong entre amigos está bien;
-> no guardes nada privado ahí.
+Quien no tenga foto muestra su emoji. Si el archivo no existe o está mal escrito, el avatar cae al
+emoji también, sin romper nada.
+
+## Lo que todavía no resuelve
+
+Cada navegador tiene su propia copia de la liga: si cargás un partido en la compu, no aparece en tu
+celular ni en el de los demás. Para que los cuatro vean lo mismo hace falta una base de datos.
+
+Estuvo hecho y funcionando con Supabase, y se sacó para simplificar. Si algún día hace falta, está
+en el historial: `git revert` del commit *"Revert: Liga compartida en Supabase"* lo trae de vuelta.
 
 ---
 
@@ -194,7 +192,7 @@ src/
   lib/
     types.ts              Modelo de datos
     elo.ts                Cálculo del puntaje
-    foto.ts               Recorte y compresión de las fotos de perfil
+    fotos.ts              Qué foto le toca a cada jugador
     liga.ts               Deriva tabla, rachas, cruces y estadísticas
     store.ts              Estado + persistencia en localStorage (y migración)
     motion.ts             Presets de animación
@@ -203,7 +201,6 @@ src/
 
 ## Ideas para más adelante
 
-- Liga compartida en la nube (Supabase) para que cada uno la vea desde su teléfono.
 - Dobles (2 vs 2).
 - Torneos con llave de eliminación.
 - Récords de la liga: mayor racha histórica, la remontada más grande, el clásico más jugado.

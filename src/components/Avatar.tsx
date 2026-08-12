@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { tonoJugador } from "@/lib/color";
 import { iniciales } from "@/lib/format";
+import { fotoDe } from "@/lib/fotos";
 import type { Jugador } from "@/lib/types";
 
 const TAMANOS = {
@@ -36,6 +38,11 @@ export function Avatar({
   torcido?: boolean;
 }) {
   const tono = tonoJugador(jugador.id);
+  const foto = fotoDe(jugador.id);
+
+  // Si el archivo no está (todavía no se subió, o se renombró), el avatar
+  // vuelve al emoji en vez de mostrar el ícono de imagen rota.
+  const [fotoRota, setFotoRota] = useState(false);
 
   return (
     <span
@@ -49,10 +56,16 @@ export function Avatar({
       }}
       title={jugador.nombre}
     >
-      {jugador.foto ? (
-        // Es un data URL guardado en el navegador: next/image no aporta nada acá.
+      {foto && !fotoRota ? (
+        // Archivo estático servido por el propio hosting: next/image no aporta
+        // nada acá y complicaría el recorte cuadrado.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={jugador.foto} alt="" className="size-full object-cover" />
+        <img
+          src={foto}
+          alt=""
+          className="size-full object-cover"
+          onError={() => setFotoRota(true)}
+        />
       ) : jugador.emoji ? (
         <span aria-hidden>{jugador.emoji}</span>
       ) : (
