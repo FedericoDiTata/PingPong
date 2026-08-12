@@ -14,9 +14,18 @@ const CLAVE = "mesa.liga.v1";
  * la app funciona sin cuenta, sin servidor y sin conexión. Exportar e importar
  * el JSON es el puente para pasar la liga de un teléfono a otro.
  */
-type Instantanea = { estado: Estado; hidratado: boolean };
+type Instantanea = {
+  estado: Estado;
+  hidratado: boolean;
+  /** false si la última escritura en el navegador falló (cuota, modo privado). */
+  guardado: boolean;
+};
 
-const INSTANTANEA_SERVIDOR: Instantanea = { estado: ESTADO_VACIO, hidratado: false };
+const INSTANTANEA_SERVIDOR: Instantanea = {
+  estado: ESTADO_VACIO,
+  hidratado: false,
+  guardado: true,
+};
 
 let instantanea: Instantanea = INSTANTANEA_SERVIDOR;
 let hidratacionPedida = false;
@@ -120,17 +129,23 @@ function leerAlmacenado(): Estado | null {
   }
 }
 
-function persistir(estado: Estado) {
+/**
+ * Devuelve si pudo escribir. Que esto falle en silencio es peor que el error
+ * en sí: la app sigue andando con los datos en memoria y el usuario se entera
+ * recién cuando vuelve a abrirla y no está nada de lo que cargó.
+ */
+function persistir(estado: Estado): boolean {
   try {
     window.localStorage.setItem(CLAVE, JSON.stringify(estado));
+    return true;
   } catch {
-    // Cuota llena o modo privado: la sesión sigue funcionando en memoria.
+    return false;
   }
 }
 
 function fijar(estado: Estado, guardar = true) {
-  instantanea = { estado, hidratado: true };
-  if (guardar) persistir(estado);
+  const guardado = guardar ? persistir(estado) : instantanea.guardado;
+  instantanea = { estado, hidratado: true, guardado };
   emitir();
 }
 
@@ -147,12 +162,15 @@ function hidratar() {
   // anterior): se siembra el historial que ya existía en papel y se guarda en
   // el acto. A partir de ahí manda siempre lo que hay en disco, así que borrar
   // un partido de la siembra no lo resucita en la próxima visita.
-  const guardado = leerAlmacenado();
-  const sembrar = !guardado || esLigaDeEjemplo(guardado);
-  const inicial = sembrar ? ligaInicial() : guardado;
-  if (sembrar) persistir(inicial);
+  const almacenado = leerAlmacenado();
+  const sembrar = !almacenado || esLigaDeEjemplo(almacenado);
+  const inicial = sembrar ? ligaInicial() : almacenado;
 
-  instantanea = { estado: inicial, hidratado: true };
+  instantanea = {
+    estado: inicial,
+    hidratado: true,
+    guardado: sembrar ? persistir(inicial) : true,
+  };
 
   // Dos pestañas abiertas se mantienen sincronizadas.
   window.addEventListener("storage", (evento) => {
@@ -262,11 +280,12 @@ function ligaDe(estado: Estado): Liga {
 }
 
 export function useLiga() {
-  const { estado, hidratado } = useSyncExternalStore(suscribir, leer, leerEnServidor);
+  const { estado, hidratado, guardado } = useSyncExternalStore(suscribir, leer, leerEnServidor);
 
   return {
     estado,
     hidratado,
+    guardado,
     liga: ligaDe(estado),
     agregarJugador,
     editarJugador,

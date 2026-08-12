@@ -193,12 +193,14 @@ export default function PaginaJugadores() {
                       <Avatar jugador={jugador} tamano="sm" />
                       <Link
                         href={`/jugador/${jugador.id}`}
-                        className="display min-w-0 flex-1 truncate text-2xl text-tinta hover:text-naranja-hondo"
+                        className="display min-w-[5.5rem] flex-1 truncate text-2xl text-tinta hover:text-naranja-hondo"
                       >
                         {jugador.nombre}
                       </Link>
 
-                      <span className="display text-lg text-tinta/60">
+                      {/* En pantallas angostas el nombre gana: estos números ya
+                          están en el ranking, el nombre no está en ningún lado. */}
+                      <span className="display hidden text-lg text-tinta/60 sm:block">
                         {stats && stats.pj > 0 ? (
                           <>
                             {fila ? `#${fila.puesto} · ` : ""}
@@ -248,9 +250,15 @@ export default function PaginaJugadores() {
 
       <section className="border-t-[3px] border-tinta pt-10">
         <TituloSeccion rotulo="Respaldo" titulo="Los datos son tuyos" />
-        <p className="mb-6 max-w-[62ch] text-sm font-medium leading-relaxed text-crema/65">
+        <p className="mb-4 max-w-[62ch] text-sm font-medium leading-relaxed text-crema/65">
           La liga vive en este navegador: no hay cuentas ni servidor. Descargá el archivo para tener
           una copia o para que otro la abra en su celular.
+        </p>
+
+        {/* La dirección importa: el navegador guarda por dirección exacta, y un
+            puerto distinto en localhost es, para él, otra app con otros datos. */}
+        <p className="mb-6 max-w-[62ch] text-2xs font-bold uppercase tracking-[0.1em] text-crema/40">
+          Guardando en {typeof window === "undefined" ? "este navegador" : window.location.host}
         </p>
 
         <div className="flex flex-wrap gap-3">

@@ -91,6 +91,14 @@ Todo se guarda en el `localStorage` del navegador que usás. Ventajas: no hay qu
 sin internet y nadie más ve tus datos. Contra: **la liga vive en ese navegador**. Si cada uno la
 abre en su celular, cada uno arranca del mismo historial inicial pero después sigue por su cuenta.
 
+> **Ojo con la dirección.** El navegador guarda por dirección exacta, puerto incluido: lo que
+> cargues en `localhost:3000` no existe en `localhost:3001`. Por eso `npm run dev` está fijado al
+> puerto 3000. Si alguna vez abrís la app en otro puerto y "no está nada", los datos siguen en el
+> puerto viejo. La pantalla de *Jugadores* muestra abajo en qué dirección está guardando.
+>
+> Publicarla (ver más abajo) resuelve esto de raíz: una dirección fija para siempre, la misma en la
+> compu y en el celular.
+
 Para moverla o compartirla, en *Jugadores → Los datos son tuyos*:
 
 - **Descargar liga**: baja un `.json` con todo.

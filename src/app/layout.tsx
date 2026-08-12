@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Anton, Archivo } from "next/font/google";
 import "./globals.css";
+import { AvisoAlmacenamiento } from "@/components/AvisoAlmacenamiento";
 import { Fondo } from "@/components/Fondo";
 import { ConfiguracionMovimiento } from "@/components/Motion";
 import { BarraInferior, BarraSuperior } from "@/components/Navegacion";
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="mx-auto w-full max-w-5xl px-4 pb-32 pt-6 md:px-8 md:pb-20 md:pt-10">
             {children}
           </main>
+          <AvisoAlmacenamiento />
           <BarraInferior />
         </ConfiguracionMovimiento>
       </body>
