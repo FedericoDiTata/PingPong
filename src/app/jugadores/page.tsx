@@ -14,6 +14,7 @@ import {
 } from "@/components/Iconos";
 import { Cargando, Encabezado, Pagina } from "@/components/Pagina";
 import { Boton, Campo, ConfirmarEnLinea, TituloSeccion } from "@/components/ui";
+import { nombreDelEntorno } from "@/lib/despliegue";
 import { escalonar, golpe, resorte } from "@/lib/motion";
 import { useLiga } from "@/lib/store";
 import { EMOJIS } from "@/lib/types";
@@ -255,10 +256,11 @@ export default function PaginaJugadores() {
           una copia o para que otro la abra en su celular.
         </p>
 
-        {/* La dirección importa: el navegador guarda por dirección exacta, y un
-            puerto distinto en localhost es, para él, otra app con otros datos. */}
+        {/* La dirección importa: el navegador guarda por dirección exacta, así
+            que otro puerto u otra URL de Vercel son, para él, otra app. */}
         <p className="mb-6 max-w-[62ch] text-2xs font-bold uppercase tracking-[0.1em] text-crema/40">
-          Guardando en {typeof window === "undefined" ? "este navegador" : window.location.host}
+          Guardando en {typeof window === "undefined" ? "este navegador" : window.location.host} ·{" "}
+          {nombreDelEntorno}
         </p>
 
         <div className="flex flex-wrap gap-3">

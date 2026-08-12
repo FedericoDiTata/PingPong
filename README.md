@@ -91,13 +91,17 @@ Todo se guarda en el `localStorage` del navegador que usás. Ventajas: no hay qu
 sin internet y nadie más ve tus datos. Contra: **la liga vive en ese navegador**. Si cada uno la
 abre en su celular, cada uno arranca del mismo historial inicial pero después sigue por su cuenta.
 
-> **Ojo con la dirección.** El navegador guarda por dirección exacta, puerto incluido: lo que
-> cargues en `localhost:3000` no existe en `localhost:3001`. Por eso `npm run dev` está fijado al
-> puerto 3000. Si alguna vez abrís la app en otro puerto y "no está nada", los datos siguen en el
-> puerto viejo. La pantalla de *Jugadores* muestra abajo en qué dirección está guardando.
+> **Ojo con la dirección.** El navegador guarda por dirección exacta. Dos trampas concretas:
 >
-> Publicarla (ver más abajo) resuelve esto de raíz: una dirección fija para siempre, la misma en la
-> compu y en el celular.
+> - **En local, el puerto cuenta**: lo que cargues en `localhost:3000` no existe en
+>   `localhost:3001`. Por eso `npm run dev` está fijado al 3000.
+> - **En Vercel, las vistas previas no sirven**: cada push genera una URL nueva
+>   (`ping-pong-abc123.vercel.app`), y para el navegador cada una es una app distinta y vacía.
+>   Entrá siempre por la URL de producción, la que no cambia.
+>
+> La app avisa sola en los dos casos: si estás en una vista previa aparece un cartel con el link a
+> la buena, y si arrancó sin datos guardados te lo dice en vez de disimularlo con la liga inicial.
+> Abajo de todo en *Jugadores* siempre se ve en qué dirección está guardando.
 
 Para moverla o compartirla, en *Jugadores → Los datos son tuyos*:
 
@@ -133,7 +137,18 @@ npm run lint    # revisa el código
 Es una app estática: sirve cualquier hosting. Lo más rápido es Vercel — importás el repo y no hay
 nada que configurar (no usa variables de entorno ni base de datos).
 
+**Usá siempre la URL de producción**, la que figura arriba de todo en el panel de Vercel y no
+cambia nunca. Las direcciones que aparecen abajo de cada commit son vistas previas: sirven para
+mirar un cambio antes de publicarlo, pero cada una tiene su propio almacenamiento vacío.
+
 Una vez publicada, desde el celular se puede agregar a la pantalla de inicio y se abre como una app.
+
+### Lo que todavía no resuelve
+
+Cada navegador tiene su propia copia de la liga, incluso en la misma dirección: si cargás un
+partido en la compu, no aparece en tu celular ni en el de los demás. Para que los cuatro vean lo
+mismo hace falta una base de datos. Está preparado para eso: toda la lectura y escritura pasa por
+`src/lib/store.ts`.
 
 ---
 
