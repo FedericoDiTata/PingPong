@@ -289,6 +289,9 @@ function faltantes(cache: Estado | null, enLaLiga: Estado): Estado | null {
 /** Entra sin aportar nada: la liga de la nube pasa a ser la única verdad. */
 function entrarALaLiga() {
   marcarPresentada();
+  // Recién ahora se pisa la copia local: es la respuesta explícita de que lo
+  // que había en este navegador y no está en la liga se deja atrás.
+  guardarCache(instantanea.estado);
   publicar({ presentacion: null });
 }
 
@@ -340,19 +343,21 @@ async function hidratar() {
   try {
     await sembrarSiEstaVacia(ligaInicial());
     const estado = await leerLiga();
-    guardarCache(estado);
-    publicar({
-      estado,
-      hidratado: true,
-      guardado: true,
-      sembrada: false,
-      presentacion: yaPresentada()
-        ? null
-        : {
-            enLaLiga: { jugadores: estado.jugadores.length, partidos: estado.partidos.length },
-            pendiente: faltantes(cache, estado),
-          },
-    });
+
+    const presentacion: Presentacion | null = yaPresentada()
+      ? null
+      : {
+          enLaLiga: { jugadores: estado.jugadores.length, partidos: estado.partidos.length },
+          pendiente: faltantes(cache, estado),
+        };
+
+    // La copia local se pisa recién cuando no queda nada por decidir. Si hay
+    // partidos que todavía no están en la liga, guardar acá lo de la nube los
+    // borraría del navegador antes de que nadie eligiera qué hacer con ellos, y
+    // cerrar la pestaña sin contestar alcanzaría para perderlos.
+    if (!presentacion?.pendiente) guardarCache(estado);
+
+    publicar({ estado, hidratado: true, guardado: true, sembrada: false, presentacion });
     escucharCambios(refrescar);
   } catch (error) {
     console.error("No se pudo leer la liga de Supabase", error);
