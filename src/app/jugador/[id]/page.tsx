@@ -99,7 +99,9 @@ export default function PaginaJugador() {
     .sort((x, y) => y.pg - x.pg || y.pg - y.pp - (x.pg - x.pp))[0];
 
   const bestiaNegra = [...cruces]
-    .filter((cruce) => cruce.pp >= cruce.pg && cruce.pp > 0 && cruce.rival.id !== favorito?.rival.id)
+    .filter(
+      (cruce) => cruce.pp >= cruce.pg && cruce.pp > 0 && cruce.rival.id !== favorito?.rival.id,
+    )
     .sort((x, y) => y.pp - x.pp || y.pp - y.pg - (x.pp - x.pg))[0];
 
   return (

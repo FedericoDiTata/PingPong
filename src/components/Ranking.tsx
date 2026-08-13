@@ -167,7 +167,8 @@ function Fila({ fila, indice }: { fila: FilaTabla; indice: number }) {
 
             <div className="flex items-center gap-2">
               <span className="display text-sm text-tinta/70">
-                {fila.pg}<span className="text-tinta/35">G</span> · {fila.pp}
+                {fila.pg}
+                <span className="text-tinta/35">G</span> · {fila.pp}
                 <span className="text-tinta/35">P</span>
               </span>
               <span className="hidden md:block">
@@ -177,7 +178,10 @@ function Fila({ fila, indice }: { fila: FilaTabla; indice: number }) {
           </div>
 
           <div className="flex shrink-0 flex-col items-end">
-            <NumeroRodante valor={fila.puntos} className="display text-2xl text-tinta md:text-3xl" />
+            <NumeroRodante
+              valor={fila.puntos}
+              className="display text-2xl text-tinta md:text-3xl"
+            />
             <span className="rotulo text-tinta/40">puntos</span>
           </div>
         </motion.div>

@@ -74,8 +74,7 @@ export function resolver(partido: Partido) {
   const ganoA = partido.ganador === partido.jugadorA;
   const perdedorId = ganoA ? partido.jugadorB : partido.jugadorA;
 
-  const tienePuntos =
-    typeof partido.puntosA === "number" && typeof partido.puntosB === "number";
+  const tienePuntos = typeof partido.puntosA === "number" && typeof partido.puntosB === "number";
 
   const puntosGanador = tienePuntos ? (ganoA ? partido.puntosA! : partido.puntosB!) : null;
   const puntosPerdedor = tienePuntos ? (ganoA ? partido.puntosB! : partido.puntosA!) : null;

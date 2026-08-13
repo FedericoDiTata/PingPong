@@ -46,7 +46,10 @@ export function NumeroRodante({
   const signo = valor < 0 ? "−" : prefijo;
 
   return (
-    <span className={`inline-flex items-baseline tabular-nums ${className}`} aria-label={`${valor}`}>
+    <span
+      className={`inline-flex items-baseline tabular-nums ${className}`}
+      aria-label={`${valor}`}
+    >
       {signo ? <span aria-hidden>{signo}</span> : null}
       <span aria-hidden className="inline-flex">
         {texto.split("").map((caracter, indice) => (

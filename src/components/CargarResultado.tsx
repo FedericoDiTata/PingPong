@@ -111,7 +111,12 @@ export function CargarResultado({
     const [a, b] = seleccion;
     const ahora = new Date();
     const cuando = new Date(`${fecha}T00:00:00`);
-    cuando.setHours(ahora.getHours(), ahora.getMinutes(), ahora.getSeconds(), ahora.getMilliseconds());
+    cuando.setHours(
+      ahora.getHours(),
+      ahora.getMinutes(),
+      ahora.getSeconds(),
+      ahora.getMilliseconds(),
+    );
 
     const ganoA = ganador === a;
     const conMarcador = verMarcador && puntosPerdedor !== null;
@@ -179,9 +184,7 @@ export function CargarResultado({
                   <span className="display block truncate text-lg leading-none">
                     {jugador.nombre}
                   </span>
-                  <span className="text-2xs font-bold text-tinta/55">
-                    {stats?.puntos ?? 0} pts
-                  </span>
+                  <span className="text-2xs font-bold text-tinta/55">{stats?.puntos ?? 0} pts</span>
                 </span>
 
                 <AnimatePresence>
@@ -295,9 +298,7 @@ export function CargarResultado({
                 className="overflow-hidden"
               >
                 <div className="cartel rounded-lg p-4 md:p-5">
-                  <p className="rotulo mb-4 text-tinta/60">
-                    ¿Cuántos puntos hizo el que perdió?
-                  </p>
+                  <p className="rotulo mb-4 text-tinta/60">¿Cuántos puntos hizo el que perdió?</p>
 
                   <div className="flex flex-wrap gap-2">
                     {Array.from({ length: 10 }, (_, numero) => {
@@ -432,9 +433,7 @@ export function CargarResultado({
         <motion.div
           animate={puedeGuardar ? { scale: [1, 1.02, 1] } : { scale: 0.98 }}
           transition={
-            puedeGuardar
-              ? { duration: 1.6, repeat: Infinity, ease: [0.65, 0, 0.35, 1] }
-              : resorte
+            puedeGuardar ? { duration: 1.6, repeat: Infinity, ease: [0.65, 0, 0.35, 1] } : resorte
           }
         >
           <Boton
@@ -461,7 +460,10 @@ export function CargarResultado({
           >
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h2 className="display text-xl text-crema">Recién cargados</h2>
-              <Link href="/" className="text-2xs font-bold uppercase tracking-[0.12em] text-naranja">
+              <Link
+                href="/"
+                className="text-2xs font-bold uppercase tracking-[0.12em] text-naranja"
+              >
                 Ver ranking →
               </Link>
             </div>

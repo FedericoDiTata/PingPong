@@ -12,7 +12,8 @@ type TamanoBoton = "sm" | "md" | "lg" | "xl";
 
 // Un botón apagado no es "el mismo color más transparente": eso sigue
 // pareciendo apretable. Pasa a ser un bloque hundido, sin sombra.
-const APAGADO = "disabled:bg-azul-950 disabled:text-crema/35 disabled:border-tinta disabled:shadow-none";
+const APAGADO =
+  "disabled:bg-azul-950 disabled:text-crema/35 disabled:border-tinta disabled:shadow-none";
 
 const VARIANTES: Record<VarianteBoton, string> = {
   naranja: `bg-naranja text-tinta border-tinta shadow-[var(--golpe)] hover:bg-naranja-claro ${APAGADO}`,

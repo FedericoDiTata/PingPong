@@ -41,19 +41,12 @@ function duelosDe(liga: Liga): Duelo[] {
 
   // Primero los cruces más jugados: son los que tienen historia.
   return duelos.sort(
-    (x, y) => y.total - x.total || Math.abs(y.ganoUno - y.ganoOtro) - Math.abs(x.ganoUno - x.ganoOtro),
+    (x, y) =>
+      y.total - x.total || Math.abs(y.ganoUno - y.ganoOtro) - Math.abs(x.ganoUno - x.ganoOtro),
   );
 }
 
-function Lado({
-  jugador,
-  gana,
-  derecha,
-}: {
-  jugador: Jugador;
-  gana: boolean;
-  derecha?: boolean;
-}) {
+function Lado({ jugador, gana, derecha }: { jugador: Jugador; gana: boolean; derecha?: boolean }) {
   return (
     <div
       className={`flex min-w-0 flex-1 items-center gap-2.5 ${derecha ? "flex-row-reverse" : ""}`}

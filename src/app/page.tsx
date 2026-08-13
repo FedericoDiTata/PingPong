@@ -120,7 +120,6 @@ export default function PaginaRanking() {
           </ul>
         </section>
       ) : null}
-
     </Pagina>
   );
 }
