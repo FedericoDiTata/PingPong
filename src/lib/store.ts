@@ -118,6 +118,20 @@ type PartidoCrudo = Partial<Partido> & {
 };
 
 /**
+ * Los ids de la siembra inicial se rellenaron con ceros después de la primera
+ * versión: "historial-7" pasó a ser "historial-007".
+ *
+ * Sin esto, un navegador que quedó con la siembra vieja los ve como partidos
+ * distintos de los que están en la liga, y al conectarse los sube todos: el
+ * historial entero duplicado, 76 partidos que aparecen dos veces. Pasó de
+ * verdad, en la computadora del trabajo, el 2026-08-13.
+ */
+function idDeHistorial(id: string): string {
+  const viejo = /^historial-(\d{1,2})$/.exec(id);
+  return viejo ? `historial-${viejo[1].padStart(3, "0")}` : id;
+}
+
+/**
  * Acepta el formato viejo (partidos al mejor de N, con lista de games) y lo
  * traduce al actual: un game a 11 con marcador opcional. Un archivo exportado
  * hace meses tiene que seguir abriendo.
@@ -160,7 +174,7 @@ function normalizarPartido(crudo: PartidoCrudo): Partido | null {
   const conPuntos = Number.isFinite(puntosA) && Number.isFinite(puntosB);
 
   return {
-    id: crudo.id,
+    id: idDeHistorial(crudo.id),
     jugadorA: crudo.jugadorA,
     jugadorB: crudo.jugadorB,
     ganador,
