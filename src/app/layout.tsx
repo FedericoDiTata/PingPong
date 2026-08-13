@@ -5,6 +5,7 @@ import { AvisoAlmacenamiento } from "@/components/AvisoAlmacenamiento";
 import { Fondo } from "@/components/Fondo";
 import { ConfiguracionMovimiento } from "@/components/Motion";
 import { BarraInferior, BarraSuperior } from "@/components/Navegacion";
+import { PrimeraVez } from "@/components/PrimeraVez";
 
 const display = Anton({
   variable: "--font-anton",
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
           <AvisoAlmacenamiento />
+          <PrimeraVez />
           <BarraInferior />
         </ConfiguracionMovimiento>
       </body>
