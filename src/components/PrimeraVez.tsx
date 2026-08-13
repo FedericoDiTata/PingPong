@@ -65,8 +65,8 @@ export function PrimeraVez() {
               Primera vez acá
             </motion.span>
 
-            <h2 className="display mt-4 text-3xl leading-none text-tinta md:text-4xl">
-              La liga es de todos
+            <h2 className="display mt-4 text-3xl leading-[0.95] text-tinta md:text-4xl">
+              Mundial de Ping Pong - Edición Oficina
             </h2>
 
             <p className="mt-3 text-sm font-bold leading-relaxed text-tinta/75">
