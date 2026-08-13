@@ -1,31 +1,69 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { computarLiga, type Liga } from "./liga";
 import { esLigaDeEjemplo, ligaInicial } from "./inicial";
+import { computarLiga, type Liga } from "./liga";
+import {
+  bajarJugador,
+  bajarPartido,
+  escucharCambios,
+  hayNube,
+  leerLiga,
+  reemplazarTodo,
+  sembrarSiEstaVacia,
+  subirJugador,
+  subirPartido,
+  sumarALaLiga,
+} from "./nube";
 import { ESTADO_VACIO, type Estado, type Jugador, type Partido } from "./types";
 
 const CLAVE = "mesa.liga.v1";
 
+/** Marca de que este navegador ya se presentó ante la liga compartida. */
+const CLAVE_PRESENTADA = "mesa.presentada.v1";
+
 /**
- * Store externo con `useSyncExternalStore`.
+ * Estado de la liga, con dos formas de guardarlo.
  *
- * Todo vive en localStorage del navegador. Es una decisión, no una limitación:
- * la app funciona sin cuenta, sin servidor y sin conexión. Exportar e importar
- * el JSON es el puente para pasar la liga de un teléfono a otro.
+ * Con Supabase configurado, la base es la verdad: se lee al abrir, se escribe
+ * en cada cambio y el tiempo real trae lo que cargan los demás. El navegador
+ * queda como copia local, para pintar algo al instante y para que la app no se
+ * caiga si el teléfono está sin señal.
+ *
+ * Sin Supabase, todo vive en el navegador como antes. Así una copia recién
+ * clonada del repo anda igual, sin cuenta ni configuración.
+ *
+ * Las escrituras son optimistas: la pantalla se actualiza sola y la red va
+ * atrás. Si falla, `guardado` pasa a false y la app lo dice en vez de fingir.
  */
+/**
+ * Lo que se le muestra a un navegador que entra por primera vez a la liga
+ * compartida. Aparece una sola vez por computadora y sirve para dos cosas:
+ * decir en voz alta que a partir de ahora los datos son de todos, y no tirar a
+ * la basura lo que ese navegador tuviera guardado de antes.
+ */
+export type Presentacion = {
+  /** Lo que ya hay en la liga compartida. */
+  enLaLiga: { jugadores: number; partidos: number };
+  /**
+   * Lo que este navegador tiene guardado y en la liga no está. Null cuando no
+   * hay nada para aportar, que es el caso de cualquier teléfono que entra por
+   * primera vez.
+   */
+  pendiente: Estado | null;
+};
+
 type Instantanea = {
   estado: Estado;
   hidratado: boolean;
-  /** false si la última escritura en el navegador falló (cuota, modo privado). */
+  /** false si lo último que se intentó guardar no llegó a destino. */
   guardado: boolean;
+  /** No null mientras haya que mostrar la pantalla de bienvenida. */
+  presentacion: Presentacion | null;
   /**
-   * true si al abrir no había nada guardado y hubo que sembrar la liga inicial.
-   *
-   * Importa avisarlo: la siembra deja la app igual de poblada que siempre, así
-   * que perder todos los datos se ve exactamente igual que abrirla por primera
-   * vez. Lo único que falta son las fotos, los nombres cambiados y los partidos
-   * nuevos, y sin este dato parece que la app se los comió.
+   * true si hubo que crear la liga inicial porque el navegador estaba vacío.
+   * Sólo aplica sin Supabase: es la pista de que se perdieron los datos, que
+   * si no se confunde con abrir la app por primera vez.
    */
   sembrada: boolean;
 };
@@ -34,6 +72,7 @@ const INSTANTANEA_SERVIDOR: Instantanea = {
   estado: ESTADO_VACIO,
   hidratado: false,
   guardado: true,
+  presentacion: null,
   sembrada: false,
 };
 
@@ -46,10 +85,17 @@ function emitir() {
   for (const oyente of oyentes) oyente();
 }
 
+function publicar(cambios: Partial<Instantanea>) {
+  instantanea = { ...instantanea, ...cambios };
+  emitir();
+}
+
 function nuevoId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
 }
+
+/* ------------------------------------------------------------ normalizar --- */
 
 type PartidoCrudo = Partial<Partido> & {
   games?: Array<{ a?: unknown; b?: unknown }>;
@@ -129,7 +175,9 @@ function normalizar(dato: unknown): Estado | null {
   return { version: 2, jugadores, partidos };
 }
 
-function leerAlmacenado(): Estado | null {
+/* -------------------------------------------------------- copia local --- */
+
+function leerCache(): Estado | null {
   try {
     const crudo = window.localStorage.getItem(CLAVE);
     if (!crudo) return null;
@@ -139,12 +187,7 @@ function leerAlmacenado(): Estado | null {
   }
 }
 
-/**
- * Devuelve si pudo escribir. Que esto falle en silencio es peor que el error
- * en sí: la app sigue andando con los datos en memoria y el usuario se entera
- * recién cuando vuelve a abrirla y no está nada de lo que cargó.
- */
-function persistir(estado: Estado): boolean {
+function guardarCache(estado: Estado): boolean {
   try {
     window.localStorage.setItem(CLAVE, JSON.stringify(estado));
     return true;
@@ -153,50 +196,182 @@ function persistir(estado: Estado): boolean {
   }
 }
 
-function fijar(estado: Estado, guardar = true) {
-  const guardado = guardar ? persistir(estado) : instantanea.guardado;
-  instantanea = { estado, hidratado: true, guardado, sembrada: instantanea.sembrada };
-  emitir();
+/* --------------------------------------------------------- aplicar --- */
+
+/**
+ * Cambia el estado en pantalla ya, y manda el cambio a la base por atrás.
+ * Sin Supabase, lo que manda es si el navegador aceptó guardar.
+ */
+function aplicar(receta: (previo: Estado) => Estado, sincronizar?: () => Promise<void>) {
+  const estado = receta(instantanea.estado);
+  const enDisco = guardarCache(estado);
+
+  publicar({ estado, guardado: hayNube ? instantanea.guardado : enDisco });
+
+  if (hayNube && sincronizar) {
+    sincronizar()
+      .then(() => publicar({ guardado: true }))
+      .catch((error) => {
+        console.error("No se pudo guardar en Supabase", error);
+        publicar({ guardado: false });
+      });
+  }
 }
 
-function actualizar(receta: (previo: Estado) => Estado, guardar = true) {
-  fijar(receta(instantanea.estado), guardar);
+/* ------------------------------------------------------------ hidratar --- */
+
+let refrescando = false;
+
+async function refrescar() {
+  if (refrescando) return;
+  refrescando = true;
+  try {
+    const estado = await leerLiga();
+    guardarCache(estado);
+    publicar({ estado, guardado: true });
+  } catch (error) {
+    console.error("No se pudo refrescar la liga", error);
+  } finally {
+    refrescando = false;
+  }
 }
 
-/** Primera lectura del disco. Se dispara al montar el primer suscriptor. */
-function hidratar() {
-  if (hidratacionPedida) return;
-  hidratacionPedida = true;
-
-  // Navegador sin datos (o con la liga de ejemplo vieja pegada del release
-  // anterior): se siembra el historial que ya existía en papel y se guarda en
-  // el acto. A partir de ahí manda siempre lo que hay en disco, así que borrar
-  // un partido de la siembra no lo resucita en la próxima visita.
-  const almacenado = leerAlmacenado();
-  const sembrar = !almacenado || esLigaDeEjemplo(almacenado);
-  const inicial = sembrar ? ligaInicial() : almacenado;
-
-  instantanea = {
-    estado: inicial,
-    hidratado: true,
-    guardado: sembrar ? persistir(inicial) : true,
-    sembrada: sembrar,
-  };
-
-  // Dos pestañas abiertas se mantienen sincronizadas.
+function escucharOtrasPestanas() {
   window.addEventListener("storage", (evento) => {
     if (evento.key !== CLAVE || !evento.newValue) return;
     try {
       const dato = normalizar(JSON.parse(evento.newValue));
-      if (dato) fijar(dato, false);
+      if (dato) publicar({ estado: dato });
     } catch {
       /* ignorar */
     }
   });
 }
 
+/* ---------------------------------------------------------- primera vez --- */
+
+function yaPresentada(): boolean {
+  try {
+    return window.localStorage.getItem(CLAVE_PRESENTADA) === "si";
+  } catch {
+    // Sin acceso al almacenamiento no podemos recordar la respuesta, y una
+    // bienvenida que vuelve en cada visita es peor que no mostrarla.
+    return true;
+  }
+}
+
+function marcarPresentada() {
+  try {
+    window.localStorage.setItem(CLAVE_PRESENTADA, "si");
+  } catch {
+    /* la app sigue igual, sólo va a volver a saludar */
+  }
+}
+
+/**
+ * Lo que este navegador tiene guardado y en la liga no está, comparando por id.
+ * Van los jugadores además de los partidos porque un partido puede ser contra
+ * alguien que se agregó acá y allá todavía no existe.
+ */
+function faltantes(cache: Estado | null, enLaLiga: Estado): Estado | null {
+  if (!cache) return null;
+
+  const jugadoresAlla = new Set(enLaLiga.jugadores.map((jugador) => jugador.id));
+  const partidosAlla = new Set(enLaLiga.partidos.map((partido) => partido.id));
+
+  const jugadores = cache.jugadores.filter((jugador) => !jugadoresAlla.has(jugador.id));
+  const partidos = cache.partidos.filter((partido) => !partidosAlla.has(partido.id));
+
+  if (jugadores.length === 0 && partidos.length === 0) return null;
+  return { version: 2, jugadores, partidos };
+}
+
+/** Entra sin aportar nada: la liga de la nube pasa a ser la única verdad. */
+function entrarALaLiga() {
+  marcarPresentada();
+  // Recién ahora se pisa la copia local: es la respuesta explícita de que lo
+  // que había en este navegador y no está en la liga se deja atrás.
+  guardarCache(instantanea.estado);
+  publicar({ presentacion: null });
+}
+
+/** Entra sumando lo que había en este navegador. No pisa nada de lo que ya hay. */
+async function sumarYEntrar(): Promise<boolean> {
+  const pendiente = instantanea.presentacion?.pendiente;
+  if (!pendiente) {
+    entrarALaLiga();
+    return true;
+  }
+
+  try {
+    await sumarALaLiga(pendiente);
+    const estado = await leerLiga();
+    guardarCache(estado);
+    marcarPresentada();
+    publicar({ estado, guardado: true, presentacion: null });
+    return true;
+  } catch (error) {
+    console.error("No se pudieron sumar los partidos de este navegador", error);
+    publicar({ guardado: false });
+    return false;
+  }
+}
+
+/** Primera lectura. Se dispara al montar el primer suscriptor. */
+async function hidratar() {
+  if (hidratacionPedida) return;
+  hidratacionPedida = true;
+
+  const cache = leerCache();
+
+  if (!hayNube) {
+    const sembrar = !cache || esLigaDeEjemplo(cache);
+    const inicial = sembrar ? ligaInicial() : cache;
+    publicar({
+      estado: inicial,
+      hidratado: true,
+      guardado: sembrar ? guardarCache(inicial) : true,
+      sembrada: sembrar,
+    });
+    escucharOtrasPestanas();
+    return;
+  }
+
+  // Mientras baja lo de verdad, mostramos la última copia conocida.
+  if (cache) publicar({ estado: cache, hidratado: true });
+
+  try {
+    await sembrarSiEstaVacia(ligaInicial());
+    const estado = await leerLiga();
+
+    const presentacion: Presentacion | null = yaPresentada()
+      ? null
+      : {
+          enLaLiga: { jugadores: estado.jugadores.length, partidos: estado.partidos.length },
+          pendiente: faltantes(cache, estado),
+        };
+
+    // La copia local se pisa recién cuando no queda nada por decidir. Si hay
+    // partidos que todavía no están en la liga, guardar acá lo de la nube los
+    // borraría del navegador antes de que nadie eligiera qué hacer con ellos, y
+    // cerrar la pestaña sin contestar alcanzaría para perderlos.
+    if (!presentacion?.pendiente) guardarCache(estado);
+
+    publicar({ estado, hidratado: true, guardado: true, sembrada: false, presentacion });
+    escucharCambios(refrescar);
+  } catch (error) {
+    console.error("No se pudo leer la liga de Supabase", error);
+    publicar({
+      estado: cache ?? ligaInicial(),
+      hidratado: true,
+      guardado: false,
+      sembrada: false,
+    });
+  }
+}
+
 function suscribir(alCambiar: () => void) {
-  hidratar();
+  void hidratar();
   oyentes.add(alCambiar);
   return () => {
     oyentes.delete(alCambiar);
@@ -219,42 +394,62 @@ function agregarJugador(nombre: string, emoji: string): Jugador | null {
     creadoEn: new Date().toISOString(),
   };
 
-  actualizar((previo) => ({ ...previo, jugadores: [...previo.jugadores, jugador] }));
+  aplicar(
+    (previo) => ({ ...previo, jugadores: [...previo.jugadores, jugador] }),
+    () => subirJugador(jugador),
+  );
+
   return jugador;
 }
 
 function editarJugador(id: string, cambios: Partial<Pick<Jugador, "nombre" | "emoji">>) {
-  actualizar((previo) => ({
-    ...previo,
-    jugadores: previo.jugadores.map((jugador) =>
-      jugador.id === id
-        ? { ...jugador, ...cambios, nombre: cambios.nombre?.trim() || jugador.nombre }
-        : jugador,
-    ),
-  }));
+  const actual = instantanea.estado.jugadores.find((jugador) => jugador.id === id);
+  if (!actual) return;
+
+  const actualizado: Jugador = {
+    ...actual,
+    ...cambios,
+    nombre: cambios.nombre?.trim() || actual.nombre,
+  };
+
+  aplicar(
+    (previo) => ({
+      ...previo,
+      jugadores: previo.jugadores.map((jugador) => (jugador.id === id ? actualizado : jugador)),
+    }),
+    () => subirJugador(actualizado),
+  );
 }
 
 function borrarJugador(id: string) {
-  actualizar((previo) => ({
-    ...previo,
-    jugadores: previo.jugadores.filter((jugador) => jugador.id !== id),
-    partidos: previo.partidos.filter(
-      (partido) => partido.jugadorA !== id && partido.jugadorB !== id,
-    ),
-  }));
+  aplicar(
+    (previo) => ({
+      ...previo,
+      jugadores: previo.jugadores.filter((jugador) => jugador.id !== id),
+      partidos: previo.partidos.filter(
+        (partido) => partido.jugadorA !== id && partido.jugadorB !== id,
+      ),
+    }),
+    () => bajarJugador(id),
+  );
 }
 
 function agregarPartido(datos: Omit<Partido, "id">): Partido {
   const partido: Partido = { ...datos, id: nuevoId() };
-  actualizar((previo) => ({ ...previo, partidos: [...previo.partidos, partido] }));
+
+  aplicar(
+    (previo) => ({ ...previo, partidos: [...previo.partidos, partido] }),
+    () => subirPartido(partido),
+  );
+
   return partido;
 }
 
 function borrarPartido(id: string) {
-  actualizar((previo) => ({
-    ...previo,
-    partidos: previo.partidos.filter((partido) => partido.id !== id),
-  }));
+  aplicar(
+    (previo) => ({ ...previo, partidos: previo.partidos.filter((partido) => partido.id !== id) }),
+    () => bajarPartido(id),
+  );
 }
 
 function exportar(): string {
@@ -265,7 +460,10 @@ function importar(crudo: string): { ok: boolean; error?: string } {
   try {
     const dato = normalizar(JSON.parse(crudo));
     if (!dato) return { ok: false, error: "El archivo no tiene el formato de una liga." };
-    fijar(dato);
+    aplicar(
+      () => dato,
+      () => reemplazarTodo(dato),
+    );
     return { ok: true };
   } catch {
     return { ok: false, error: "No se pudo leer el archivo: no es un JSON válido." };
@@ -273,7 +471,11 @@ function importar(crudo: string): { ok: boolean; error?: string } {
 }
 
 function vaciar() {
-  fijar({ ...ESTADO_VACIO });
+  const vacio: Estado = { ...ESTADO_VACIO };
+  aplicar(
+    () => vacio,
+    () => reemplazarTodo(vacio),
+  );
 }
 
 /* ------------------------------------------------------------------ Hook --- */
@@ -291,7 +493,7 @@ function ligaDe(estado: Estado): Liga {
 }
 
 export function useLiga() {
-  const { estado, hidratado, guardado, sembrada } = useSyncExternalStore(
+  const { estado, hidratado, guardado, sembrada, presentacion } = useSyncExternalStore(
     suscribir,
     leer,
     leerEnServidor,
@@ -302,6 +504,11 @@ export function useLiga() {
     hidratado,
     guardado,
     sembrada,
+    presentacion,
+    entrarALaLiga,
+    sumarYEntrar,
+    /** true si la liga es compartida (Supabase) y no sólo de este navegador. */
+    compartida: hayNube,
     liga: ligaDe(estado),
     agregarJugador,
     editarJugador,
