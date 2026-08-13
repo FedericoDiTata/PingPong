@@ -159,13 +159,28 @@ El precio es que no se cambian desde la app. Para agregar o reemplazar una:
 Quien no tenga foto muestra su emoji. Si el archivo no existe o está mal escrito, el avatar cae al
 emoji también, sin romper nada.
 
-## Lo que todavía no resuelve
+## La liga compartida
 
-Cada navegador tiene su propia copia de la liga: si cargás un partido en la compu, no aparece en tu
-celular ni en el de los demás. Para que los cuatro vean lo mismo hace falta una base de datos.
+Con Supabase configurado, la liga es una sola: quien carga un resultado desde el celular se lo
+muestra a todos en el acto, sin recargar. Sin configurar, la app sigue andando con la liga guardada
+en el navegador, así que una copia recién clonada funciona igual.
 
-Estuvo hecho y funcionando con Supabase, y se sacó para simplificar. Si algún día hace falta, está
-en el historial: `git revert` del commit *"Revert: Liga compartida en Supabase"* lo trae de vuelta.
+**No hay cuentas ni contraseñas.** La liga es de quien tenga el link, y cualquiera que entre puede
+cargar y borrar partidos. Es a propósito: al lado de la mesa, con el celular en la mano, pedir un
+login es garantía de que el partido no se anote. No pongas nada privado ahí adentro.
+
+Para encenderla:
+
+1. Correr [`supabase/schema.sql`](supabase/schema.sql) en el **SQL Editor** del proyecto. Crea las
+   dos tablas con las reglas del juego como restricciones, abre los permisos y prende el tiempo
+   real. Se puede correr más de una vez.
+2. Cargar las dos variables de [`.env.example`](.env.example) en Vercel y volver a desplegar. Ojo
+   con la URL: va el **Project URL** (`https://xxx.supabase.co`), no el endpoint REST que termina en
+   `/rest/v1/`.
+
+La primera vez que se abre en cada computadora aparece una pantalla que lo explica. Si ese navegador
+tenía partidos que en la liga no están, ofrece sumarlos: nada se pisa ni se duplica, porque todo se
+identifica por id.
 
 ---
 
