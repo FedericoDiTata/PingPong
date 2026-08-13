@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import { esLigaDeEjemplo, ligaInicial } from "./inicial";
 import { computarLiga, type Liga } from "./liga";
 import {
+  anotarMovimiento,
   bajarJugador,
   bajarPartido,
   escucharCambios,
@@ -15,27 +16,25 @@ import {
   subirPartido,
   sumarALaLiga,
 } from "./nube";
-import { ESTADO_VACIO, type Estado, type Jugador, type Partido } from "./types";
+import {
+  ESTADO_VACIO,
+  type EntidadMovimiento,
+  type Estado,
+  type Jugador,
+  type Movimiento,
+  type Partido,
+  type Quien,
+  type TipoMovimiento,
+} from "./types";
 
 const CLAVE = "mesa.liga.v1";
 
 /** Marca de que este navegador ya se presentó ante la liga compartida. */
 const CLAVE_PRESENTADA = "mesa.presentada.v1";
 
-/**
- * Estado de la liga, con dos formas de guardarlo.
- *
- * Con Supabase configurado, la base es la verdad: se lee al abrir, se escribe
- * en cada cambio y el tiempo real trae lo que cargan los demás. El navegador
- * queda como copia local, para pintar algo al instante y para que la app no se
- * caiga si el teléfono está sin señal.
- *
- * Sin Supabase, todo vive en el navegador como antes. Así una copia recién
- * clonada del repo anda igual, sin cuenta ni configuración.
- *
- * Las escrituras son optimistas: la pantalla se actualiza sola y la red va
- * atrás. Si falla, `guardado` pasa a false y la app lo dice en vez de fingir.
- */
+/** De quién es este dispositivo, para firmar lo que se carga desde acá. */
+const CLAVE_QUIEN = "mesa.quien.v1";
+
 /**
  * Lo que se le muestra a un navegador que entra por primera vez a la liga
  * compartida. Aparece una sola vez por computadora y sirve para dos cosas:
@@ -53,6 +52,20 @@ export type Presentacion = {
   pendiente: Estado | null;
 };
 
+/**
+ * Estado de la liga, con dos formas de guardarlo.
+ *
+ * Con Supabase configurado, la base es la verdad: se lee al abrir, se escribe
+ * en cada cambio y el tiempo real trae lo que cargan los demás. El navegador
+ * queda como copia local, para pintar algo al instante y para que la app no se
+ * caiga si el teléfono está sin señal.
+ *
+ * Sin Supabase, todo vive en el navegador como antes. Así una copia recién
+ * clonada del repo anda igual, sin cuenta ni configuración.
+ *
+ * Las escrituras son optimistas: la pantalla se actualiza sola y la red va
+ * atrás. Si falla, `guardado` pasa a false y la app lo dice en vez de fingir.
+ */
 type Instantanea = {
   estado: Estado;
   hidratado: boolean;
@@ -60,6 +73,8 @@ type Instantanea = {
   guardado: boolean;
   /** No null mientras haya que mostrar la pantalla de bienvenida. */
   presentacion: Presentacion | null;
+  /** De quién es este dispositivo. Null hasta que se conteste. */
+  quien: Quien | null;
   /**
    * true si hubo que crear la liga inicial porque el navegador estaba vacío.
    * Sólo aplica sin Supabase: es la pista de que se perdieron los datos, que
@@ -73,6 +88,7 @@ const INSTANTANEA_SERVIDOR: Instantanea = {
   hidratado: false,
   guardado: true,
   presentacion: null,
+  quien: null,
   sembrada: false,
 };
 
@@ -155,7 +171,11 @@ function normalizarPartido(crudo: PartidoCrudo): Partido | null {
 
 function normalizar(dato: unknown): Estado | null {
   if (typeof dato !== "object" || dato === null) return null;
-  const posible = dato as { jugadores?: unknown; partidos?: unknown };
+  const posible = dato as {
+    jugadores?: unknown;
+    partidos?: unknown;
+    movimientos?: unknown;
+  };
   if (!Array.isArray(posible.jugadores) || !Array.isArray(posible.partidos)) return null;
 
   const jugadores = posible.jugadores.filter(
@@ -172,7 +192,17 @@ function normalizar(dato: unknown): Estado | null {
         partido !== null && ids.has(partido.jugadorA) && ids.has(partido.jugadorB),
     );
 
-  return { version: 2, jugadores, partidos };
+  // El registro puede no estar: los archivos exportados antes de que existiera
+  // siguen abriendo, sin registro y sin romper nada.
+  const crudos = Array.isArray(posible.movimientos) ? posible.movimientos : [];
+  const movimientos = (crudos as Movimiento[]).filter(
+    (movimiento) =>
+      typeof movimiento?.id === "string" &&
+      typeof movimiento.sobre === "string" &&
+      typeof movimiento.quienNombre === "string",
+  );
+
+  return { version: 2, jugadores, partidos, movimientos };
 }
 
 /* -------------------------------------------------------- copia local --- */
@@ -248,6 +278,112 @@ function escucharOtrasPestanas() {
   });
 }
 
+/* ------------------------------------------------------------- registro --- */
+
+function leerQuien(): Quien | null {
+  try {
+    const crudo = window.localStorage.getItem(CLAVE_QUIEN);
+    if (!crudo) return null;
+    const dato = JSON.parse(crudo) as Quien;
+    return typeof dato?.id === "string" && typeof dato?.nombre === "string" ? dato : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Deja anotado de quién es este dispositivo. Se puede cambiar cuando se quiera. */
+function elegirQuien(quien: Quien) {
+  try {
+    window.localStorage.setItem(CLAVE_QUIEN, JSON.stringify(quien));
+  } catch {
+    // Sin almacenamiento lo va a volver a preguntar en la próxima visita, pero
+    // por esta sesión ya sabemos a nombre de quién anotar.
+  }
+  publicar({ quien });
+}
+
+/** Suelta la identidad de este dispositivo: la app vuelve a preguntar quién es. */
+function olvidarQuien() {
+  try {
+    window.localStorage.removeItem(CLAVE_QUIEN);
+  } catch {
+    /* si no se puede borrar, alcanza con soltarlo en memoria */
+  }
+  publicar({ quien: null });
+}
+
+/**
+ * Para el que abre la app y todavía no está en la liga: se suma como jugador y
+ * el dispositivo queda a su nombre.
+ *
+ * El orden importa. Primero queda anotado quién es y después se crea el
+ * jugador, así el alta figura hecha por esa misma persona y no por nadie.
+ */
+function presentarseComoNuevo(nombre: string, emoji: string): Jugador | null {
+  const limpio = nombre.trim();
+  if (!limpio) return null;
+
+  const id = nuevoId();
+  elegirQuien({ id, nombre: limpio });
+
+  const jugador = agregarJugador(limpio, emoji, id);
+  if (!jugador) return null;
+
+  // agregarJugador puede haber recortado el nombre; que el registro y la lista
+  // digan lo mismo.
+  elegirQuien({ id: jugador.id, nombre: jugador.nombre });
+  return jugador;
+}
+
+/**
+ * Suma una línea al registro y la manda a la base.
+ *
+ * El nombre se guarda además del id porque el registro tiene que seguir
+ * leyéndose dentro de un año, aunque esa persona ya no esté en la liga.
+ *
+ * Si falla el envío no se marca la liga como "sin guardar": el partido ya se
+ * guardó, y avisar que no se guardó nada sería mentir sobre lo que importa.
+ * Queda en la consola y la línea vive igual en la copia local.
+ */
+function anotar(
+  entidad: EntidadMovimiento,
+  tipo: TipoMovimiento,
+  sobre: string,
+  fotos: { antes?: Partido | Jugador; despues?: Partido | Jugador },
+  quienForzado?: Quien,
+) {
+  const quien = quienForzado ?? instantanea.quien;
+
+  const movimiento: Movimiento = {
+    id: nuevoId(),
+    entidad,
+    tipo,
+    sobre,
+    quienId: quien?.id ?? null,
+    quienNombre: quien?.nombre ?? "sin identificar",
+    ...fotos,
+    cuando: new Date().toISOString(),
+  };
+
+  aplicar((previo) => ({
+    ...previo,
+    movimientos: [movimiento, ...previo.movimientos],
+  }));
+
+  if (hayNube) {
+    anotarMovimiento(movimiento).catch((error) => {
+      console.error("No se pudo anotar en el registro", error);
+    });
+  }
+}
+
+/** Quién cargó un partido, según el registro. Undefined si es del historial viejo. */
+export function autorDe(estado: Estado, partidoId: string): string | undefined {
+  return estado.movimientos.find(
+    (movimiento) => movimiento.tipo === "alta" && movimiento.sobre === partidoId,
+  )?.quienNombre;
+}
+
 /* ---------------------------------------------------------- primera vez --- */
 
 function yaPresentada(): boolean {
@@ -279,11 +415,16 @@ function faltantes(cache: Estado | null, enLaLiga: Estado): Estado | null {
   const jugadoresAlla = new Set(enLaLiga.jugadores.map((jugador) => jugador.id));
   const partidosAlla = new Set(enLaLiga.partidos.map((partido) => partido.id));
 
+  const movimientosAlla = new Set(enLaLiga.movimientos.map((movimiento) => movimiento.id));
+
   const jugadores = cache.jugadores.filter((jugador) => !jugadoresAlla.has(jugador.id));
   const partidos = cache.partidos.filter((partido) => !partidosAlla.has(partido.id));
+  const movimientos = cache.movimientos.filter((movimiento) => !movimientosAlla.has(movimiento.id));
 
+  // El registro solo no cuenta como algo para ofrecer: si lo único distinto son
+  // líneas de registro, se suben calladas junto con lo demás.
   if (jugadores.length === 0 && partidos.length === 0) return null;
-  return { version: 2, jugadores, partidos };
+  return { version: 2, jugadores, partidos, movimientos };
 }
 
 /** Entra sin aportar nada: la liga de la nube pasa a ser la única verdad. */
@@ -332,6 +473,7 @@ async function hidratar() {
       hidratado: true,
       guardado: sembrar ? guardarCache(inicial) : true,
       sembrada: sembrar,
+      quien: leerQuien(),
     });
     escucharOtrasPestanas();
     return;
@@ -347,7 +489,10 @@ async function hidratar() {
     const presentacion: Presentacion | null = yaPresentada()
       ? null
       : {
-          enLaLiga: { jugadores: estado.jugadores.length, partidos: estado.partidos.length },
+          enLaLiga: {
+            jugadores: estado.jugadores.length,
+            partidos: estado.partidos.length,
+          },
           pendiente: faltantes(cache, estado),
         };
 
@@ -357,7 +502,14 @@ async function hidratar() {
     // cerrar la pestaña sin contestar alcanzaría para perderlos.
     if (!presentacion?.pendiente) guardarCache(estado);
 
-    publicar({ estado, hidratado: true, guardado: true, sembrada: false, presentacion });
+    publicar({
+      estado,
+      hidratado: true,
+      guardado: true,
+      sembrada: false,
+      presentacion,
+      quien: leerQuien(),
+    });
     escucharCambios(refrescar);
   } catch (error) {
     console.error("No se pudo leer la liga de Supabase", error);
@@ -366,6 +518,7 @@ async function hidratar() {
       hidratado: true,
       guardado: false,
       sembrada: false,
+      quien: leerQuien(),
     });
   }
 }
@@ -383,12 +536,12 @@ const leerEnServidor = () => INSTANTANEA_SERVIDOR;
 
 /* --------------------------------------------------------------- Acciones --- */
 
-function agregarJugador(nombre: string, emoji: string): Jugador | null {
+function agregarJugador(nombre: string, emoji: string, idPedido?: string): Jugador | null {
   const limpio = nombre.trim();
   if (!limpio) return null;
 
   const jugador: Jugador = {
-    id: nuevoId(),
+    id: idPedido ?? nuevoId(),
     nombre: limpio,
     emoji,
     creadoEn: new Date().toISOString(),
@@ -398,6 +551,8 @@ function agregarJugador(nombre: string, emoji: string): Jugador | null {
     (previo) => ({ ...previo, jugadores: [...previo.jugadores, jugador] }),
     () => subirJugador(jugador),
   );
+
+  anotar("jugador", "alta", jugador.id, { despues: jugador });
 
   return jugador;
 }
@@ -419,9 +574,13 @@ function editarJugador(id: string, cambios: Partial<Pick<Jugador, "nombre" | "em
     }),
     () => subirJugador(actualizado),
   );
+
+  anotar("jugador", "edicion", id, { antes: actual, despues: actualizado });
 }
 
 function borrarJugador(id: string) {
+  const borrado = instantanea.estado.jugadores.find((jugador) => jugador.id === id);
+
   aplicar(
     (previo) => ({
       ...previo,
@@ -432,6 +591,8 @@ function borrarJugador(id: string) {
     }),
     () => bajarJugador(id),
   );
+
+  if (borrado) anotar("jugador", "baja", id, { antes: borrado });
 }
 
 function agregarPartido(datos: Omit<Partido, "id">): Partido {
@@ -442,14 +603,24 @@ function agregarPartido(datos: Omit<Partido, "id">): Partido {
     () => subirPartido(partido),
   );
 
+  anotar("partido", "alta", partido.id, { despues: partido });
+
   return partido;
 }
 
 function borrarPartido(id: string) {
+  // La foto se saca antes de borrar: después ya no hay de dónde.
+  const borrado = instantanea.estado.partidos.find((partido) => partido.id === id);
+
   aplicar(
-    (previo) => ({ ...previo, partidos: previo.partidos.filter((partido) => partido.id !== id) }),
+    (previo) => ({
+      ...previo,
+      partidos: previo.partidos.filter((partido) => partido.id !== id),
+    }),
     () => bajarPartido(id),
   );
+
+  if (borrado) anotar("partido", "baja", id, { antes: borrado });
 }
 
 function exportar(): string {
@@ -459,14 +630,21 @@ function exportar(): string {
 function importar(crudo: string): { ok: boolean; error?: string } {
   try {
     const dato = normalizar(JSON.parse(crudo));
-    if (!dato) return { ok: false, error: "El archivo no tiene el formato de una liga." };
+    if (!dato)
+      return {
+        ok: false,
+        error: "El archivo no tiene el formato de una liga.",
+      };
     aplicar(
       () => dato,
       () => reemplazarTodo(dato),
     );
     return { ok: true };
   } catch {
-    return { ok: false, error: "No se pudo leer el archivo: no es un JSON válido." };
+    return {
+      ok: false,
+      error: "No se pudo leer el archivo: no es un JSON válido.",
+    };
   }
 }
 
@@ -493,7 +671,7 @@ function ligaDe(estado: Estado): Liga {
 }
 
 export function useLiga() {
-  const { estado, hidratado, guardado, sembrada, presentacion } = useSyncExternalStore(
+  const { estado, hidratado, guardado, sembrada, presentacion, quien } = useSyncExternalStore(
     suscribir,
     leer,
     leerEnServidor,
@@ -507,6 +685,11 @@ export function useLiga() {
     presentacion,
     entrarALaLiga,
     sumarYEntrar,
+    /** De quién es este dispositivo: todo lo que se carga queda a su nombre. */
+    quien,
+    elegirQuien,
+    olvidarQuien,
+    presentarseComoNuevo,
     /** true si la liga es compartida (Supabase) y no sólo de este navegador. */
     compartida: hayNube,
     liga: ligaDe(estado),

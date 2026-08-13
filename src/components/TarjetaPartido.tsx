@@ -15,11 +15,14 @@ export function TarjetaPartido({
   onBorrar,
   indice = 0,
   destacarA,
+  autor,
 }: {
   resultado: ResultadoPartido;
   liga: Liga;
   onBorrar?: () => void;
   indice?: number;
+  /** Quién lo cargó, según el registro. Los partidos viejos no tienen. */
+  autor?: string;
   /** Id del jugador cuyo perfil estamos mirando, para marcar si ganó o perdió. */
   destacarA?: string;
 }) {
@@ -31,9 +34,7 @@ export function TarjetaPartido({
   const mirandoAlPerdedor = destacarA === perdedor.id;
 
   const deltaGanador =
-    resultado.ganadorId === resultado.partido.jugadorA
-      ? resultado.delta.a
-      : resultado.delta.b;
+    resultado.ganadorId === resultado.partido.jugadorA ? resultado.delta.a : resultado.delta.b;
 
   return (
     <motion.article
@@ -81,6 +82,12 @@ export function TarjetaPartido({
         <span className="text-2xs font-bold uppercase tracking-[0.1em] text-tinta/45">
           {relativo(resultado.partido.jugadoEn)}
         </span>
+
+        {autor ? (
+          <span className="truncate text-2xs font-bold uppercase tracking-[0.1em] text-tinta/35">
+            por {autor}
+          </span>
+        ) : null}
 
         {mirandoAlGanador || mirandoAlPerdedor ? (
           <span

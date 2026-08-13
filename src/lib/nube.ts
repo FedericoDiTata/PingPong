@@ -1,5 +1,12 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Estado, Jugador, Partido } from "./types";
+import type {
+  EntidadMovimiento,
+  Estado,
+  Jugador,
+  Movimiento,
+  Partido,
+  TipoMovimiento,
+} from "./types";
 
 /**
  * Acceso a la liga guardada en Supabase.
@@ -43,7 +50,9 @@ function conectar(): SupabaseClient {
   if (!URL_BASE || !CLAVE) throw new Error("Falta configurar Supabase");
   // Sin sesiones: la liga no tiene usuarios, y guardar tokens que nadie usa
   // sólo agrega cosas raras en el navegador.
-  cliente ??= createClient(URL_BASE, CLAVE, { auth: { persistSession: false } });
+  cliente ??= createClient(URL_BASE, CLAVE, {
+    auth: { persistSession: false },
+  });
   return cliente;
 }
 
@@ -82,6 +91,42 @@ const aFilaJugador = (jugador: Jugador) => ({
   creado_en: jugador.creadoEn,
 });
 
+type FilaMovimiento = {
+  id: string;
+  entidad: EntidadMovimiento;
+  tipo: TipoMovimiento;
+  sobre: string;
+  quien_id: string | null;
+  quien_nombre: string;
+  antes: Partido | Jugador | null;
+  despues: Partido | Jugador | null;
+  cuando: string;
+};
+
+const aMovimiento = (fila: FilaMovimiento): Movimiento => ({
+  id: fila.id,
+  entidad: fila.entidad,
+  tipo: fila.tipo,
+  sobre: fila.sobre,
+  quienId: fila.quien_id,
+  quienNombre: fila.quien_nombre,
+  ...(fila.antes ? { antes: fila.antes } : {}),
+  ...(fila.despues ? { despues: fila.despues } : {}),
+  cuando: fila.cuando,
+});
+
+const aFilaMovimiento = (movimiento: Movimiento) => ({
+  id: movimiento.id,
+  entidad: movimiento.entidad,
+  tipo: movimiento.tipo,
+  sobre: movimiento.sobre,
+  quien_id: movimiento.quienId,
+  quien_nombre: movimiento.quienNombre,
+  antes: movimiento.antes ?? null,
+  despues: movimiento.despues ?? null,
+  cuando: movimiento.cuando,
+});
+
 const aPartido = (fila: FilaPartido): Partido => ({
   id: fila.id,
   jugadorA: fila.jugador_a,
@@ -108,18 +153,25 @@ const aFilaPartido = (partido: Partido) => ({
 export async function leerLiga(): Promise<Estado> {
   const db = conectar();
 
-  const [jugadores, partidos] = await Promise.all([
+  const [jugadores, partidos, movimientos] = await Promise.all([
     db.from("jugadores").select("*").order("creado_en"),
     db.from("partidos").select("*").order("jugado_en"),
+    db.from("movimientos").select("*").order("cuando", { ascending: false }),
   ]);
 
   if (jugadores.error) throw jugadores.error;
   if (partidos.error) throw partidos.error;
 
+  // El registro no es motivo para tirar abajo la liga entera. Si la tabla
+  // todavía no existe —código desplegado antes de correr el SQL— la app tiene
+  // que seguir mostrando los partidos igual, sin registro.
+  if (movimientos.error) console.error("No se pudo leer el registro", movimientos.error);
+
   return {
     version: 2,
     jugadores: (jugadores.data as FilaJugador[]).map(aJugador),
     partidos: (partidos.data as FilaPartido[]).map(aPartido),
+    movimientos: movimientos.error ? [] : (movimientos.data as FilaMovimiento[]).map(aMovimiento),
   };
 }
 
@@ -146,7 +198,19 @@ export async function bajarPartido(id: string): Promise<void> {
   if (error) throw error;
 }
 
-/** Deja la base exactamente como el estado que se le pasa. Para importar y vaciar. */
+/** Suma una línea al registro. La base no deja tocarla después. */
+export async function anotarMovimiento(movimiento: Movimiento): Promise<void> {
+  const { error } = await conectar().from("movimientos").insert(aFilaMovimiento(movimiento));
+  if (error) throw error;
+}
+
+/**
+ * Deja la base exactamente como el estado que se le pasa. Para importar y vaciar.
+ *
+ * No toca el registro de movimientos, y no podría aunque quisiera: la base no
+ * deja borrar de ahí. Vaciar la liga es en sí mismo algo que conviene que quede
+ * anotado.
+ */
 export async function reemplazarTodo(estado: Estado): Promise<void> {
   const db = conectar();
 
@@ -179,16 +243,26 @@ export async function sumarALaLiga(estado: Estado): Promise<void> {
   const db = conectar();
 
   if (estado.jugadores.length > 0) {
-    const { error } = await db
-      .from("jugadores")
-      .upsert(estado.jugadores.map(aFilaJugador), { onConflict: "id", ignoreDuplicates: true });
+    const { error } = await db.from("jugadores").upsert(estado.jugadores.map(aFilaJugador), {
+      onConflict: "id",
+      ignoreDuplicates: true,
+    });
     if (error) throw error;
   }
 
   if (estado.partidos.length > 0) {
-    const { error } = await db
-      .from("partidos")
-      .upsert(estado.partidos.map(aFilaPartido), { onConflict: "id", ignoreDuplicates: true });
+    const { error } = await db.from("partidos").upsert(estado.partidos.map(aFilaPartido), {
+      onConflict: "id",
+      ignoreDuplicates: true,
+    });
+    if (error) throw error;
+  }
+
+  if (estado.movimientos.length > 0) {
+    const { error } = await db.from("movimientos").upsert(estado.movimientos.map(aFilaMovimiento), {
+      onConflict: "id",
+      ignoreDuplicates: true,
+    });
     if (error) throw error;
   }
 }

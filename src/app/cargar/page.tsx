@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CargarResultado } from "@/components/CargarResultado";
 import { Cargando, Encabezado, Pagina } from "@/components/Pagina";
+import { FirmaDelDispositivo } from "@/components/PrimeraVez";
 import { Boton, EstadoVacio } from "@/components/ui";
 import { useLiga } from "@/lib/store";
 
@@ -44,6 +45,8 @@ export default function PaginaCargar() {
         titulo="Cargar resultado"
         bajada="Quién jugó contra quién y quién ganó. El marcador exacto es opcional: cargalo sólo si se acuerdan."
       />
+
+      <FirmaDelDispositivo />
 
       <CargarResultado liga={liga} onGuardar={agregarPartido} onBorrar={borrarPartido} />
     </Pagina>

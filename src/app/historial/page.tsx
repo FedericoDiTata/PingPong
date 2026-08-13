@@ -5,15 +5,16 @@ import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Avatar } from "@/components/Avatar";
 import { Cargando, Encabezado, Pagina } from "@/components/Pagina";
+import { Registro } from "@/components/Registro";
 import { TarjetaPartido } from "@/components/TarjetaPartido";
 import { Boton, EstadoVacio } from "@/components/ui";
 import { etiquetaDia } from "@/lib/format";
 import type { ResultadoPartido } from "@/lib/liga";
 import { escalonar, resorte } from "@/lib/motion";
-import { useLiga } from "@/lib/store";
+import { autorDe, useLiga } from "@/lib/store";
 
 export default function PaginaHistorial() {
-  const { liga, hidratado, borrarPartido } = useLiga();
+  const { liga, estado, hidratado, borrarPartido } = useLiga();
   const [filtro, setFiltro] = useState<string | null>(null);
 
   const grupos = useMemo(() => {
@@ -117,6 +118,7 @@ export default function PaginaHistorial() {
                     liga={liga}
                     indice={indice}
                     destacarA={filtro ?? undefined}
+                    autor={autorDe(estado, resultado.partido.id)}
                     onBorrar={() => borrarPartido(resultado.partido.id)}
                   />
                 ))}
@@ -131,6 +133,8 @@ export default function PaginaHistorial() {
           </p>
         ) : null}
       </div>
+
+      <Registro movimientos={estado.movimientos} liga={liga} />
     </Pagina>
   );
 }

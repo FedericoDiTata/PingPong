@@ -133,5 +133,6 @@ export function ligaInicial(): Estado {
     jugadoEn: new Date(CARGADOS_EL).toISOString(),
   }));
 
-  return { version: 2, jugadores, partidos };
+  // El historial sembrado no tiene registro: nadie lo cargó desde la app.
+  return { version: 2, jugadores, partidos, movimientos: [] };
 }
