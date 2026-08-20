@@ -5,8 +5,7 @@ import { useParams } from "next/navigation";
 import { motion } from "motion/react";
 import { Avatar } from "@/components/Avatar";
 import { Curva } from "@/components/Curva";
-import { Forma } from "@/components/Forma";
-import { IconoFuego, IconoVolver } from "@/components/Iconos";
+import { IconoVolver } from "@/components/Iconos";
 import { NumeroRodante } from "@/components/NumeroRodante";
 import { Cargando, Pagina } from "@/components/Pagina";
 import { TarjetaPartido } from "@/components/TarjetaPartido";
@@ -136,17 +135,6 @@ export default function PaginaJugador() {
                 #{fila.puesto}
               </motion.span>
             ) : null}
-            {stats.racha.tipo === "G" && stats.racha.largo >= 3 ? (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ ...golpe, delay: 0.18 }}
-                className="flex items-center gap-1 rounded-sm border-[3px] border-tinta bg-naranja px-2 py-1 text-2xs font-black uppercase text-tinta"
-              >
-                <IconoFuego className="size-3.5" />
-                {stats.racha.largo} al hilo
-              </motion.span>
-            ) : null}
           </div>
 
           <motion.h1
@@ -167,7 +155,6 @@ export default function PaginaJugador() {
             <span className="rotulo pb-1.5 text-crema/50">de nivel</span>
           </div>
 
-          {stats.pj > 0 ? <Forma resultados={stats.forma} /> : null}
         </div>
       </header>
 
@@ -200,8 +187,7 @@ export default function PaginaJugador() {
 
             <div className="mt-3 flex flex-wrap gap-3">
               {[
-                { texto: "Mejor racha", valor: `${stats.mejorRacha}G` },
-                { texto: "Peor racha", valor: `${stats.peorRacha}P` },
+                { texto: "Efectividad", valor: porcentaje(stats.efectividad) },
                 { texto: "Pico histórico", valor: stats.pico.toFixed(1).replace(".", ",") },
                 ...(stats.partidosConPuntos > 0
                   ? [

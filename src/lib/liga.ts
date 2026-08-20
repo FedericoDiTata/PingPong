@@ -24,8 +24,6 @@ export type PuntoHistoria = {
   nivel: number;
 };
 
-export type Racha = { tipo: "G" | "P" | null; largo: number };
-
 export type Cruce = {
   rival: Jugador;
   pg: number;
@@ -45,10 +43,6 @@ export type StatsJugador = {
   puntosGanados: number;
   puntosPerdidos: number;
   partidosConPuntos: number;
-  racha: Racha;
-  mejorRacha: number;
-  peorRacha: number;
-  forma: Array<"G" | "P">;
   historia: PuntoHistoria[];
   h2h: Record<string, { pg: number; pp: number }>;
   ultimoPartido: string | null;
@@ -90,8 +84,9 @@ export function resolver(partido: Partido) {
 }
 
 /**
- * Orden de carga. El nivel ya no depende de él, pero las rachas y la forma sí:
- * son justamente "lo último que pasó".
+ * Orden de carga, sólo para listar el historial. Ninguna estadística depende
+ * de él: los partidos se anotan de memoria y en desorden, así que cualquier
+ * número que mirara la secuencia sería inventado.
  */
 function cronologico(partidos: Partido[]): Partido[] {
   return [...partidos].sort((x, y) => {
@@ -117,10 +112,6 @@ function statsVacias(jugador: Jugador): StatsJugador {
     puntosGanados: 0,
     puntosPerdidos: 0,
     partidosConPuntos: 0,
-    racha: { tipo: null, largo: 0 },
-    mejorRacha: 0,
-    peorRacha: 0,
-    forma: [],
     historia: [],
     h2h: {},
     ultimoPartido: null,
@@ -187,38 +178,8 @@ export function computarLiga(estado: Estado): Liga {
   const niveles = calcularNiveles(ids, validos.map(dueloDe));
   for (const id of ids) stats[id].nivel = niveles[id];
 
-  /* --- Rachas y forma: esto sí es "lo último que pasó" --- */
-
-  for (const jugador of estado.jugadores) {
-    const stat = stats[jugador.id];
-
-    const marcas: Array<"G" | "P"> = resultados
-      .filter(
-        (resultado) =>
-          resultado.partido.jugadorA === jugador.id || resultado.partido.jugadorB === jugador.id,
-      )
-      .map((resultado) => (resultado.ganadorId === jugador.id ? "G" : "P"));
-
+  for (const stat of Object.values(stats)) {
     stat.efectividad = stat.pj > 0 ? stat.pg / stat.pj : 0;
-    stat.forma = marcas.slice(-6).reverse();
-
-    let largo = 0;
-    let tipo: "G" | "P" | null = null;
-    for (let i = marcas.length - 1; i >= 0; i -= 1) {
-      if (tipo === null) tipo = marcas[i];
-      if (marcas[i] !== tipo) break;
-      largo += 1;
-    }
-    stat.racha = { tipo, largo };
-
-    let ganadas = 0;
-    let perdidas = 0;
-    for (const marca of marcas) {
-      ganadas = marca === "G" ? ganadas + 1 : 0;
-      perdidas = marca === "P" ? perdidas + 1 : 0;
-      if (ganadas > stat.mejorRacha) stat.mejorRacha = ganadas;
-      if (perdidas > stat.peorRacha) stat.peorRacha = perdidas;
-    }
   }
 
   for (const resultado of resultados) {

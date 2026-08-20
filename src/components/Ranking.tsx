@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { Avatar } from "./Avatar";
-import { Forma } from "./Forma";
 import { NumeroRodante } from "./NumeroRodante";
-import { IconoFuego } from "./Iconos";
+import { porcentaje } from "@/lib/format";
 import { escalonar, golpe, resorte, resorteFirme } from "@/lib/motion";
 import type { FilaTabla } from "@/lib/liga";
 
@@ -44,7 +43,7 @@ function Escalon({ fila, puesto }: { fila: FilaTabla; puesto: number }) {
           {fila.jugador.nombre}
         </Link>
         <span className="rotulo text-crema/55">
-          {fila.pg}G · {fila.pp}P
+          {fila.pg}G · {fila.pp}P · {porcentaje(fila.efectividad)}
         </span>
       </motion.div>
 
@@ -127,31 +126,16 @@ function Fila({ fila, indice }: { fila: FilaTabla; indice: number }) {
           <Avatar jugador={fila.jugador} tamano="sm" />
 
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <span className="flex items-center gap-2">
-              <span className="display truncate text-xl leading-none text-tinta md:text-2xl">
-                {fila.jugador.nombre}
-              </span>
-              {fila.racha.tipo === "G" && fila.racha.largo >= 3 ? (
-                <span
-                  className="flex shrink-0 items-center gap-0.5 rounded-[3px] border-2 border-tinta bg-naranja px-1 py-0.5 text-[10px] font-black text-tinta"
-                  title={`${fila.racha.largo} victorias seguidas`}
-                >
-                  <IconoFuego className="size-2.5" />
-                  {fila.racha.largo}
-                </span>
-              ) : null}
+            <span className="display truncate text-xl leading-none text-tinta md:text-2xl">
+              {fila.jugador.nombre}
             </span>
 
-            <div className="flex items-center gap-2">
-              <span className="display text-sm text-tinta/70">
-                {fila.pg}
-                <span className="text-tinta/35">G</span> · {fila.pp}
-                <span className="text-tinta/35">P</span>
-              </span>
-              <span className="hidden md:block">
-                <Forma resultados={fila.forma.slice(0, 6)} chico />
-              </span>
-            </div>
+            <span className="display text-sm text-tinta/70">
+              {fila.pg}
+              <span className="text-tinta/35">G</span> · {fila.pp}
+              <span className="text-tinta/35">P</span>
+              <span className="ml-2 text-tinta/45">{porcentaje(fila.efectividad)}</span>
+            </span>
           </div>
 
           <div className="flex shrink-0 flex-col items-end">
