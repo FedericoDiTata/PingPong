@@ -12,7 +12,7 @@ import { Cargando, Pagina } from "@/components/Pagina";
 import { TarjetaPartido } from "@/components/TarjetaPartido";
 import { Boton, EstadoVacio, TituloSeccion } from "@/components/ui";
 import { tonoJugador } from "@/lib/color";
-import { conSigno, porcentaje } from "@/lib/format";
+import { porcentaje } from "@/lib/format";
 import { crucesDe } from "@/lib/liga";
 import { escalonar, golpe, resorte } from "@/lib/motion";
 import { useLiga } from "@/lib/store";
@@ -81,7 +81,6 @@ export default function PaginaJugador() {
 
   const fila = liga.tabla.find((candidata) => candidata.jugador.id === stats.jugador.id);
   const tono = tonoJugador(stats.jugador.id);
-  const ultimoDelta = stats.historia.at(-1)?.delta ?? 0;
   const cruces = crucesDe(liga, stats.jugador.id);
 
   const partidos = liga.recientes
@@ -160,13 +159,12 @@ export default function PaginaJugador() {
           </motion.h1>
 
           <div className="flex items-end gap-3">
-            <NumeroRodante valor={stats.puntos} className="display text-3xl text-naranja" />
-            <span className="rotulo pb-1.5 text-crema/50">puntos</span>
-            {stats.pj > 0 ? (
-              <span className="rotulo pb-1.5 text-crema/50">
-                {conSigno(ultimoDelta)} en el último
-              </span>
-            ) : null}
+            <NumeroRodante
+              valor={stats.nivel}
+              decimales={1}
+              className="display text-3xl text-naranja"
+            />
+            <span className="rotulo pb-1.5 text-crema/50">de nivel</span>
           </div>
 
           {stats.pj > 0 ? <Forma resultados={stats.forma} /> : null}
@@ -176,7 +174,7 @@ export default function PaginaJugador() {
       {stats.pj === 0 ? (
         <EstadoVacio
           titulo="Todavía no jugó ningún partido"
-          detalle="Arranca con 1000 puntos. En cuanto juegue el primero aparece en la tabla."
+          detalle="Arranca en 50, el nivel de un jugador promedio. En cuanto juegue el primero aparece en la tabla."
           accion={
             <Link href="/cargar">
               <Boton variante="naranja">Anotar un partido</Boton>
@@ -204,7 +202,7 @@ export default function PaginaJugador() {
               {[
                 { texto: "Mejor racha", valor: `${stats.mejorRacha}G` },
                 { texto: "Peor racha", valor: `${stats.peorRacha}P` },
-                { texto: "Pico histórico", valor: String(stats.pico) },
+                { texto: "Pico histórico", valor: stats.pico.toFixed(1).replace(".", ",") },
                 ...(stats.partidosConPuntos > 0
                   ? [
                       {
@@ -316,13 +314,13 @@ export default function PaginaJugador() {
 
           {/* ---------------------------------------------- evolución --- */}
           <section className="mb-14">
-            <TituloSeccion rotulo="Puntaje" titulo="Cómo viene" />
+            <TituloSeccion rotulo="Nivel" titulo="Cómo viene" />
             <div className="cartel rounded-lg p-4 md:p-5">
               <div className="mb-4 flex items-end justify-between">
-                <span className="rotulo text-tinta/50">Partido a partido</span>
-                <span className="display text-lg text-tinta">pico {stats.pico}</span>
+                <span className="rotulo text-tinta/50">Fecha a fecha</span>
+                <span className="display text-lg text-tinta">pico {stats.pico.toFixed(1).replace(".", ",")}</span>
               </div>
-              <Curva valores={stats.historia.map((punto) => punto.puntos)} color={tono.fuerte} />
+              <Curva valores={stats.historia.map((punto) => punto.nivel)} color={tono.fuerte} />
             </div>
           </section>
 

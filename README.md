@@ -22,9 +22,9 @@ que ya se venía llevando de memoria (`src/lib/inicial.ts`):
 
 Son 76 partidos sin marcador (de esos sólo se sabía quién había ganado), repartidos entre febrero y
 julio de 2026. Las victorias de cada cruce están intercaladas a lo largo de la serie y no apiladas,
-para que las rachas y la curva de puntaje digan algo real.
+para que las rachas y la curva de nivel digan algo real.
 
-Con ese historial la tabla arranca así: **Ernes 109 · Fer 70 · Fede 47 · Chris 25**.
+Con ese historial la tabla arranca así: **Ernes 58,0 · Fer 51,1 · Fede 47,8 · Chris 43,1**.
 
 Desde ahí en adelante, todo lo que se anote se suma encima.
 
@@ -37,8 +37,8 @@ Desde ahí en adelante, todo lo que se anote se suma encima.
    Si se acuerdan del marcador, hay un paso opcional: se toca cuántos puntos hizo el que perdió
    (0 a 9) y listo. Para los partidos peleados hay un botón *Deuce* que deja escribir 12-10, 13-11
    o lo que haya salido.
-2. **Mirá el ranking**. Cada resultado recalcula puestos, rachas y puntaje.
-3. **Sumá gente** cuando haga falta, en *Jugadores*. Los que entran arrancan con 50 puntos.
+2. **Mirá el ranking**. Cada resultado recalcula niveles, puestos y rachas.
+3. **Sumá gente** cuando haga falta, en *Jugadores*. Los que entran arrancan en nivel 50.
 
 En *Jugadores*, el lápiz de cada uno abre el editor para cambiarle el nombre o el emoji. Las fotos
 de perfil no se tocan desde la app: son archivos del proyecto (ver más abajo).
@@ -57,30 +57,42 @@ En el perfil (se entra tocando cualquier nombre):
 - **Contra cada rival**: el historial cara a cara con cada uno (5-2, 3-0, etc.), una barra con la
   proporción y quién le gana a quién.
 - Su **víctima favorita** y su **bestia negra**.
-- Mejor y peor racha, pico histórico de puntaje y la curva de cómo viene partido a partido.
+- Mejor y peor racha, pico histórico de nivel y la curva de cómo viene fecha a fecha.
 
 ---
 
-## Cómo funciona el puntaje
+## Cómo funciona el nivel
 
-Es un ELO (el sistema del ajedrez) con cuatro cambios pensados para una liga chica:
+Cada jugador tiene un **nivel de 0 a 100**: la probabilidad de ganarle a un jugador promedio. 50 es
+el promedio exacto, así que arriba de 50 le ganás a la media y abajo no.
 
-- **Todos arrancan con 50 y nadie puede quedar en negativo.** No se puede perder lo que no se
-  tiene: el que llega a cero no baja más, sólo puede subir.
-- **El factor K baja con la experiencia.** Los primeros 5 partidos mueven mucho (K=48), entre el 5
-  y el 15 menos (K=32), después se estabiliza (K=24). El ranking se ordena rápido al principio y no
-  lo da vuelta un partido suelto más adelante.
-- **Una paliza vale un poco más**, pero sólo si cargaste el marcador. Si el partido se anotó sin
-  puntos, cuenta como uno normal: nadie tiene que anotar el resultado exacto para que esto funcione.
-- **Ganarle a alguien de arriba suma más**, y perder contra alguien de abajo cuesta más.
+El método se llama **Bradley-Terry**. En vez de ir sumando y restando partido por partido, mira
+todos los resultados juntos y busca el nivel de cada uno que mejor los explica. Tres consecuencias:
 
-Lo que uno gana, el otro lo pierde. La única excepción es el piso: si el que perdió no tiene puntos
-suficientes, el ganador igual se lleva los suyos. Por eso todos arrancan con 50 y no con 0, para que
-haya colchón y eso casi no pase — con el historial de esta liga el piso se toca tres veces en 76
-partidos, todas al principio. El número está en `PUNTOS_INICIAL` (`src/lib/elo.ts`) y se puede
-cambiar sin romper nada: el puntaje **no se guarda**, se recalcula reproduciendo todos los partidos
-en orden cada vez que algo cambia. Por eso también podés borrar un partido mal cargado y toda la
-tabla se corrige sola.
+- **No importa el orden en que se cargan los partidos.** Esto es lo importante y es la razón de
+  haber elegido este método: acá los resultados se anotan de memoria y en desorden, un rato después
+  de jugarlos. Cargarlos en otro orden da exactamente el mismo resultado.
+- **Importa contra quién ganaste.** Si A le gana seguido a B y B le gana seguido a C, entonces A
+  queda bastante arriba de C aunque nunca hayan jugado entre ellos.
+- **Jugar más no suma.** Lo que mueve el nivel es ganar más de lo que perdés, no la cantidad de
+  partidos.
+
+Todos entran con partidos virtuales contra un rival promedio (`PARTIDOS_DE_ARRANQUE` en
+`src/lib/nivel.ts`). Sin eso, alguien con dos partidos y dos victorias daría 100 y se comería la
+tabla; con eso hace falta ganar seguido y bastante para despegarse. El que todavía no jugó queda
+justo en 50.
+
+El nivel se muestra con un decimal a propósito: con cien partidos encima, un partido nuevo mueve
+menos de un punto, y redondeado a entero no se vería nunca.
+
+El nivel **no se guarda**: se recalcula desde los partidos cada vez que algo cambia. Por eso podés
+borrar un partido mal cargado y toda la tabla se corrige sola.
+
+> **Por qué no es un ELO.** La primera versión lo era, y estaba mal para este uso. El ELO calcula
+> cada partido con los puntajes del momento, así que depende del orden. Se midió con los 105
+> partidos reales de la liga: cargándolos en 2000 órdenes distintos, aparecían **las 24 tablas
+> posibles**, y cualquiera de los cuatro podía terminar primero o último con los mismos resultados.
+> Con Bradley-Terry, 2000 órdenes dan una sola tabla.
 
 ---
 
@@ -110,9 +122,8 @@ Para moverla o compartirla, en *Jugadores → Los datos son tuyos*:
 *Empezar de cero* borra todo, incluido el historial inicial, y no se vuelve a sembrar. Si querés
 recuperarlo, importá un archivo o borrá la clave `mesa.liga.v1` del navegador.
 
-Si en algún momento quieren que todos vean la misma liga en tiempo real desde sus propios
-teléfonos, hay que agregar una base de datos. La app está preparada: toda la lectura y escritura
-pasa por `src/lib/store.ts`, así que se cambia ese archivo y nada más.
+Eso es lo que pasa **sin** Supabase configurado. Con la base conectada, la liga es una sola para
+todos y el navegador queda sólo como copia local (ver más abajo).
 
 ---
 
@@ -206,7 +217,7 @@ src/
   components/             UI: cada pieza visual de la app
   lib/
     types.ts              Modelo de datos
-    elo.ts                Cálculo del puntaje
+    nivel.ts              Cálculo del nivel (Bradley-Terry)
     fotos.ts              Qué foto le toca a cada jugador
     liga.ts               Deriva tabla, rachas, cruces y estadísticas
     store.ts              Estado + persistencia en localStorage (y migración)

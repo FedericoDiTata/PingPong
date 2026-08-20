@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 
 /**
  * Odómetro: cada dígito rueda a su nueva posición en vez de reemplazarse.
- * Se usa sólo donde el número ES la información (ELO, marcador), nunca de adorno.
+ * Se usa sólo donde el número ES la información (nivel, marcador), nunca de adorno.
  */
 function Columna({ digito, indice }: { digito: number; indice: number }) {
   return (
@@ -37,12 +37,14 @@ export function NumeroRodante({
   valor,
   className = "",
   prefijo,
+  decimales = 0,
 }: {
   valor: number;
   className?: string;
   prefijo?: string;
+  decimales?: number;
 }) {
-  const texto = Math.abs(Math.round(valor)).toString();
+  const texto = Math.abs(valor).toFixed(decimales);
   const signo = valor < 0 ? "−" : prefijo;
 
   return (
@@ -52,9 +54,16 @@ export function NumeroRodante({
     >
       {signo ? <span aria-hidden>{signo}</span> : null}
       <span aria-hidden className="inline-flex">
-        {texto.split("").map((caracter, indice) => (
-          <Columna key={`${indice}-${texto.length}`} digito={Number(caracter)} indice={indice} />
-        ))}
+        {texto.split("").map((caracter, indice) =>
+          caracter === "." ? (
+            // La coma no rueda: se queda fija mientras los dígitos giran.
+            <span key={`sep-${indice}`} className="px-[0.02em]">
+              ,
+            </span>
+          ) : (
+            <Columna key={`${indice}-${texto.length}`} digito={Number(caracter)} indice={indice} />
+          ),
+        )}
       </span>
     </span>
   );

@@ -71,7 +71,7 @@ function Escalon({ fila, puesto }: { fila: FilaTabla; puesto: number }) {
           </span>
         ) : null}
         <span className={`display text-3xl md:text-5xl ${estilo.texto}`}>{puesto}</span>
-        <span className={`rotulo ${estilo.texto} opacity-70`}>{fila.puntos} pts</span>
+        <span className={`rotulo ${estilo.texto} opacity-70`}>nivel {fila.nivel.toFixed(1).replace(".", ",")}</span>
       </motion.div>
     </div>
   );
@@ -98,28 +98,6 @@ export function Podio({ tabla }: { tabla: FilaTabla[] }) {
 }
 
 /* --------------------------------------------------------------- Tabla --- */
-
-function Movimiento({ delta }: { delta: number }) {
-  if (delta === 0) return null;
-
-  const sube = delta > 0;
-  return (
-    <motion.span
-      initial={{ opacity: 0, y: sube ? 8 : -8, scale: 0.5 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={golpe}
-      className={`flex items-center gap-0.5 rounded-[3px] border-2 border-tinta px-1 py-0.5 text-[10px] font-black ${
-        sube ? "bg-naranja text-tinta" : "bg-azul-800 text-crema"
-      }`}
-      title={sube ? `Subió ${delta} puesto(s)` : `Bajó ${Math.abs(delta)} puesto(s)`}
-    >
-      <svg viewBox="0 0 8 6" className="size-1.5" fill="currentColor" aria-hidden>
-        <path d={sube ? "M4 0 8 6H0z" : "M4 6 0 0h8z"} />
-      </svg>
-      {Math.abs(delta)}
-    </motion.span>
-  );
-}
 
 function Fila({ fila, indice }: { fila: FilaTabla; indice: number }) {
   const lider = fila.puesto === 1;
@@ -153,7 +131,6 @@ function Fila({ fila, indice }: { fila: FilaTabla; indice: number }) {
               <span className="display truncate text-xl leading-none text-tinta md:text-2xl">
                 {fila.jugador.nombre}
               </span>
-              <Movimiento delta={fila.deltaPuesto} />
               {fila.racha.tipo === "G" && fila.racha.largo >= 3 ? (
                 <span
                   className="flex shrink-0 items-center gap-0.5 rounded-[3px] border-2 border-tinta bg-naranja px-1 py-0.5 text-[10px] font-black text-tinta"
@@ -179,10 +156,11 @@ function Fila({ fila, indice }: { fila: FilaTabla; indice: number }) {
 
           <div className="flex shrink-0 flex-col items-end">
             <NumeroRodante
-              valor={fila.puntos}
+              valor={fila.nivel}
+              decimales={1}
               className="display text-2xl text-tinta md:text-3xl"
             />
-            <span className="rotulo text-tinta/40">puntos</span>
+            <span className="rotulo text-tinta/40">nivel</span>
           </div>
         </motion.div>
       </Link>

@@ -184,7 +184,7 @@ export function CargarResultado({
                   <span className="display block truncate text-lg leading-none">
                     {jugador.nombre}
                   </span>
-                  <span className="text-2xs font-bold text-tinta/55">{stats?.puntos ?? 0} pts</span>
+                  <span className="text-2xs font-bold text-tinta/55">nivel {(stats?.nivel ?? 50).toFixed(1).replace(".", ",")}</span>
                 </span>
 
                 <AnimatePresence>

@@ -1,26 +1,27 @@
-import { PUNTOS_INICIAL, variacionPuntos } from "./elo";
-import type { Estado, Jugador, NivelDetalle, Partido } from "./types";
+import { calcularNiveles, NIVEL_PROMEDIO, type Duelo } from "./nivel";
+import type { DetalleMarcador, Estado, Jugador, Partido } from "./types";
 
 export type ResultadoPartido = {
   partido: Partido;
-  detalle: NivelDetalle;
+  detalle: DetalleMarcador;
   ganadorId: string;
   perdedorId: string;
-  /** Puntos del ganador y del perdedor, si se cargaron. */
+  /** Puntos del ganador y del perdedor dentro del game, si se cargaron. */
   puntosGanador: number | null;
   puntosPerdedor: number | null;
-  puntosAntes: { a: number; b: number };
-  puntosDespues: { a: number; b: number };
-  delta: { a: number; b: number };
 };
 
+/**
+ * El nivel al cierre de una fecha de juego.
+ *
+ * Va por día y no por partido a propósito: dentro de un mismo día los partidos
+ * se cargan en cualquier orden, así que una marca por partido dibujaría una
+ * curva distinta según cómo se acordaron de cargarlos. Por fecha siempre sale
+ * el mismo dibujo.
+ */
 export type PuntoHistoria = {
-  partidoId: string;
   fecha: string;
-  puntos: number;
-  delta: number;
-  gano: boolean;
-  rival: string;
+  nivel: number;
 };
 
 export type Racha = { tipo: "G" | "P" | null; largo: number };
@@ -34,7 +35,8 @@ export type Cruce = {
 
 export type StatsJugador = {
   jugador: Jugador;
-  puntos: number;
+  /** De 0 a 100: la probabilidad de ganarle a un jugador promedio. */
+  nivel: number;
   pico: number;
   pj: number;
   pg: number;
@@ -54,7 +56,6 @@ export type StatsJugador = {
 
 export type FilaTabla = StatsJugador & {
   puesto: number;
-  deltaPuesto: number;
 };
 
 export type Liga = {
@@ -80,7 +81,7 @@ export function resolver(partido: Partido) {
   const puntosPerdedor = tienePuntos ? (ganoA ? partido.puntosB! : partido.puntosA!) : null;
 
   return {
-    detalle: (tienePuntos ? "puntos" : "simple") as NivelDetalle,
+    detalle: (tienePuntos ? "puntos" : "simple") as DetalleMarcador,
     ganadorId: partido.ganador,
     perdedorId,
     puntosGanador,
@@ -88,6 +89,10 @@ export function resolver(partido: Partido) {
   };
 }
 
+/**
+ * Orden de carga. El nivel ya no depende de él, pero las rachas y la forma sí:
+ * son justamente "lo último que pasó".
+ */
 function cronologico(partidos: Partido[]): Partido[] {
   return [...partidos].sort((x, y) => {
     if (x.jugadoEn === y.jugadoEn) return x.id < y.id ? -1 : 1;
@@ -95,11 +100,16 @@ function cronologico(partidos: Partido[]): Partido[] {
   });
 }
 
+const dueloDe = (partido: Partido): Duelo => ({
+  ganador: partido.ganador,
+  perdedor: partido.ganador === partido.jugadorA ? partido.jugadorB : partido.jugadorA,
+});
+
 function statsVacias(jugador: Jugador): StatsJugador {
   return {
     jugador,
-    puntos: PUNTOS_INICIAL,
-    pico: PUNTOS_INICIAL,
+    nivel: NIVEL_PROMEDIO,
+    pico: NIVEL_PROMEDIO,
     pj: 0,
     pg: 0,
     pp: 0,
@@ -117,140 +127,10 @@ function statsVacias(jugador: Jugador): StatsJugador {
   };
 }
 
-/** Reproduce todos los partidos en orden y devuelve el estado de cada jugador. */
-function simular(jugadores: Jugador[], partidos: Partido[]) {
-  const stats: Record<string, StatsJugador> = {};
-  for (const jugador of jugadores) stats[jugador.id] = statsVacias(jugador);
-
-  const resultados: ResultadoPartido[] = [];
-
-  for (const partido of cronologico(partidos)) {
-    const a = stats[partido.jugadorA];
-    const b = stats[partido.jugadorB];
-    if (!a || !b) continue;
-
-    const base = resolver(partido);
-    const ganaA = base.ganadorId === partido.jugadorA;
-
-    const diferencia =
-      base.puntosGanador !== null && base.puntosPerdedor !== null
-        ? base.puntosGanador - base.puntosPerdedor
-        : null;
-
-    const cambio = variacionPuntos({
-      puntosGanador: ganaA ? a.puntos : b.puntos,
-      puntosPerdedor: ganaA ? b.puntos : a.puntos,
-      partidosGanador: ganaA ? a.pj : b.pj,
-      partidosPerdedor: ganaA ? b.pj : a.pj,
-      margenDelMarcador: diferencia,
-    });
-
-    const deltaA = ganaA ? cambio.ganador : cambio.perdedor;
-    const deltaB = ganaA ? cambio.perdedor : cambio.ganador;
-
-    resultados.push({
-      partido,
-      ...base,
-      puntosAntes: { a: a.puntos, b: b.puntos },
-      puntosDespues: { a: a.puntos + deltaA, b: b.puntos + deltaB },
-      delta: { a: deltaA, b: deltaB },
-    });
-
-    aplicar(a, {
-      delta: deltaA,
-      gano: ganaA,
-      rival: b.jugador.id,
-      puntosPropios: ganaA ? base.puntosGanador : base.puntosPerdedor,
-      puntosRival: ganaA ? base.puntosPerdedor : base.puntosGanador,
-      partidoId: partido.id,
-      fecha: partido.jugadoEn,
-    });
-
-    aplicar(b, {
-      delta: deltaB,
-      gano: !ganaA,
-      rival: a.jugador.id,
-      puntosPropios: ganaA ? base.puntosPerdedor : base.puntosGanador,
-      puntosRival: ganaA ? base.puntosGanador : base.puntosPerdedor,
-      partidoId: partido.id,
-      fecha: partido.jugadoEn,
-    });
-  }
-
-  for (const stat of Object.values(stats)) {
-    stat.efectividad = stat.pj > 0 ? stat.pg / stat.pj : 0;
-    stat.forma = stat.historia
-      .slice(-6)
-      .reverse()
-      .map((punto) => (punto.gano ? "G" : "P"));
-    stat.ultimoPartido = stat.historia.at(-1)?.fecha ?? null;
-
-    let largo = 0;
-    let tipo: "G" | "P" | null = null;
-    for (let i = stat.historia.length - 1; i >= 0; i -= 1) {
-      const marca = stat.historia[i].gano ? "G" : "P";
-      if (tipo === null) tipo = marca;
-      if (marca !== tipo) break;
-      largo += 1;
-    }
-    stat.racha = { tipo, largo };
-
-    let ganadas = 0;
-    let perdidas = 0;
-    for (const punto of stat.historia) {
-      ganadas = punto.gano ? ganadas + 1 : 0;
-      perdidas = punto.gano ? 0 : perdidas + 1;
-      if (ganadas > stat.mejorRacha) stat.mejorRacha = ganadas;
-      if (perdidas > stat.peorRacha) stat.peorRacha = perdidas;
-    }
-  }
-
-  return { stats, resultados };
-}
-
-function aplicar(
-  stat: StatsJugador,
-  datos: {
-    delta: number;
-    gano: boolean;
-    rival: string;
-    puntosPropios: number | null;
-    puntosRival: number | null;
-    partidoId: string;
-    fecha: string;
-  },
-) {
-  stat.puntos += datos.delta;
-  stat.pico = Math.max(stat.pico, stat.puntos);
-  stat.pj += 1;
-  if (datos.gano) stat.pg += 1;
-  else stat.pp += 1;
-
-  if (datos.puntosPropios !== null && datos.puntosRival !== null) {
-    stat.puntosGanados += datos.puntosPropios;
-    stat.puntosPerdidos += datos.puntosRival;
-    stat.partidosConPuntos += 1;
-  }
-
-  const cruce = stat.h2h[datos.rival] ?? { pg: 0, pp: 0 };
-  if (datos.gano) cruce.pg += 1;
-  else cruce.pp += 1;
-  stat.h2h[datos.rival] = cruce;
-
-  stat.historia.push({
-    partidoId: datos.partidoId,
-    fecha: datos.fecha,
-    puntos: stat.puntos,
-    delta: datos.delta,
-    gano: datos.gano,
-    rival: datos.rival,
-  });
-}
-
-/** Puntos, después partidos ganados, después efectividad, después alfabético. */
+/** Nivel, después partidos ganados, después efectividad, después alfabético. */
 function ordenar(lista: StatsJugador[]): StatsJugador[] {
   return [...lista].sort((x, y) => {
-    if (y.puntos !== x.puntos) return y.puntos - x.puntos;
+    if (y.nivel !== x.nivel) return y.nivel - x.nivel;
     if (y.pg !== x.pg) return y.pg - x.pg;
     if (y.efectividad !== x.efectividad) return y.efectividad - x.efectividad;
     return x.jugador.nombre.localeCompare(y.jugador.nombre, "es");
@@ -258,27 +138,123 @@ function ordenar(lista: StatsJugador[]): StatsJugador[] {
 }
 
 export function computarLiga(estado: Estado): Liga {
-  const { stats, resultados } = simular(estado.jugadores, estado.partidos);
+  const ids = estado.jugadores.map((jugador) => jugador.id);
+  const conocidos = new Set(ids);
 
-  const conPartidos = Object.values(stats).filter((stat) => stat.pj > 0);
-  const ordenados = ordenar(conPartidos);
+  const stats: Record<string, StatsJugador> = {};
+  for (const jugador of estado.jugadores) stats[jugador.id] = statsVacias(jugador);
 
-  // El puesto de antes del último partido cargado: así la flecha de subida o
-  // bajada dice algo concreto ("esto te movió el último partido").
-  const previos = new Map<string, number>();
-  if (estado.partidos.length > 1) {
-    const historicos = cronologico(estado.partidos).slice(0, -1);
-    const anterior = simular(estado.jugadores, historicos);
-    ordenar(Object.values(anterior.stats).filter((stat) => stat.pj > 0)).forEach((stat, indice) => {
-      previos.set(stat.jugador.id, indice + 1);
-    });
+  const validos = estado.partidos.filter(
+    (partido) => conocidos.has(partido.jugadorA) && conocidos.has(partido.jugadorB),
+  );
+
+  /* --- Totales: no dependen del orden en que se hayan cargado --- */
+
+  const resultados: ResultadoPartido[] = [];
+
+  for (const partido of cronologico(validos)) {
+    const base = resolver(partido);
+    resultados.push({ partido, ...base });
+
+    const ganador = stats[base.ganadorId];
+    const perdedor = stats[base.perdedorId];
+
+    ganador.pj += 1;
+    ganador.pg += 1;
+    perdedor.pj += 1;
+    perdedor.pp += 1;
+
+    const cruceGanador = ganador.h2h[base.perdedorId] ?? { pg: 0, pp: 0 };
+    cruceGanador.pg += 1;
+    ganador.h2h[base.perdedorId] = cruceGanador;
+
+    const crucePerdedor = perdedor.h2h[base.ganadorId] ?? { pg: 0, pp: 0 };
+    crucePerdedor.pp += 1;
+    perdedor.h2h[base.ganadorId] = crucePerdedor;
+
+    if (base.puntosGanador !== null && base.puntosPerdedor !== null) {
+      ganador.puntosGanados += base.puntosGanador;
+      ganador.puntosPerdidos += base.puntosPerdedor;
+      ganador.partidosConPuntos += 1;
+      perdedor.puntosGanados += base.puntosPerdedor;
+      perdedor.puntosPerdidos += base.puntosGanador;
+      perdedor.partidosConPuntos += 1;
+    }
   }
 
-  const tabla: FilaTabla[] = ordenados.map((stat, indice) => {
-    const puesto = indice + 1;
-    const previo = previos.get(stat.jugador.id);
-    return { ...stat, puesto, deltaPuesto: previo === undefined ? 0 : previo - puesto };
-  });
+  /* --- Nivel: una sola foto de todos los resultados juntos --- */
+
+  const niveles = calcularNiveles(ids, validos.map(dueloDe));
+  for (const id of ids) stats[id].nivel = niveles[id];
+
+  /* --- Rachas y forma: esto sí es "lo último que pasó" --- */
+
+  for (const jugador of estado.jugadores) {
+    const stat = stats[jugador.id];
+
+    const marcas: Array<"G" | "P"> = resultados
+      .filter(
+        (resultado) =>
+          resultado.partido.jugadorA === jugador.id || resultado.partido.jugadorB === jugador.id,
+      )
+      .map((resultado) => (resultado.ganadorId === jugador.id ? "G" : "P"));
+
+    stat.efectividad = stat.pj > 0 ? stat.pg / stat.pj : 0;
+    stat.forma = marcas.slice(-6).reverse();
+
+    let largo = 0;
+    let tipo: "G" | "P" | null = null;
+    for (let i = marcas.length - 1; i >= 0; i -= 1) {
+      if (tipo === null) tipo = marcas[i];
+      if (marcas[i] !== tipo) break;
+      largo += 1;
+    }
+    stat.racha = { tipo, largo };
+
+    let ganadas = 0;
+    let perdidas = 0;
+    for (const marca of marcas) {
+      ganadas = marca === "G" ? ganadas + 1 : 0;
+      perdidas = marca === "P" ? perdidas + 1 : 0;
+      if (ganadas > stat.mejorRacha) stat.mejorRacha = ganadas;
+      if (perdidas > stat.peorRacha) stat.peorRacha = perdidas;
+    }
+  }
+
+  for (const resultado of resultados) {
+    const fecha = resultado.partido.jugadoEn;
+    for (const id of [resultado.partido.jugadorA, resultado.partido.jugadorB]) {
+      const stat = stats[id];
+      if (!stat.ultimoPartido || stat.ultimoPartido < fecha) stat.ultimoPartido = fecha;
+    }
+  }
+
+  /* --- Cómo viene el nivel: una marca por fecha de juego --- */
+
+  const dias = [...new Set(validos.map((partido) => partido.jugadoEn.slice(0, 10)))].sort();
+
+  for (const dia of dias) {
+    const hasta = validos.filter((partido) => partido.jugadoEn.slice(0, 10) <= dia);
+    const nivelesDelDia = calcularNiveles(ids, hasta.map(dueloDe));
+    const debutaron = new Set(hasta.flatMap((partido) => [partido.jugadorA, partido.jugadorB]));
+
+    for (const id of ids) {
+      // Antes de debutar no hay nada que dibujar: sería una línea plana falsa.
+      if (!debutaron.has(id)) continue;
+      stats[id].historia.push({ fecha: dia, nivel: nivelesDelDia[id] });
+    }
+  }
+
+  for (const id of ids) {
+    const stat = stats[id];
+    stat.pico = stat.historia.reduce((mayor, punto) => Math.max(mayor, punto.nivel), stat.nivel);
+  }
+
+  /* --- Tabla --- */
+
+  const tabla: FilaTabla[] = ordenar(Object.values(stats).filter((stat) => stat.pj > 0)).map(
+    (stat, indice) => ({ ...stat, puesto: indice + 1 }),
+  );
 
   const sinJugar = Object.values(stats)
     .filter((stat) => stat.pj === 0)

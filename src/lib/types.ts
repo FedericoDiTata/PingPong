@@ -21,7 +21,7 @@ export type Partido = {
 };
 
 /** "simple" = sabemos quién ganó · "puntos" = sabemos el marcador exacto. */
-export type NivelDetalle = "simple" | "puntos";
+export type DetalleMarcador = "simple" | "puntos";
 
 /**
  * Quién dice ser el que está usando la app en este dispositivo.

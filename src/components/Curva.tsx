@@ -2,12 +2,12 @@
 
 import { motion } from "motion/react";
 import { useId } from "react";
-import { PUNTOS_INICIAL } from "@/lib/elo";
+import { NIVEL_PROMEDIO } from "@/lib/nivel";
 
 /**
- * Evolución del puntaje. El eje Y se escala al recorrido real del jugador, con
- * la línea de arranque marcada como referencia: arriba de esa línea ganaste
- * puntos desde que empezaste, abajo los perdiste.
+ * Evolución del nivel, con una marca por fecha de juego. El eje Y se escala al
+ * recorrido real del jugador y la línea punteada es el 50, el nivel del
+ * jugador promedio: arriba de esa línea le ganás a la media, abajo no.
  */
 export function Curva({
   valores,
@@ -28,12 +28,12 @@ export function Curva({
         className={`flex items-center justify-center text-xs font-bold text-tinta/40 ${className}`}
         style={{ height: alto }}
       >
-        Con dos partidos ya se dibuja la curva
+        Con dos fechas jugadas ya se dibuja la curva
       </div>
     );
   }
 
-  const serie = [PUNTOS_INICIAL, ...valores];
+  const serie = [NIVEL_PROMEDIO, ...valores];
   const maximo = Math.max(...serie);
   const minimo = Math.min(...serie);
   const rango = Math.max(maximo - minimo, 24);
@@ -45,7 +45,7 @@ export function Curva({
 
   const linea = serie.map((valor, indice) => `${x(indice)},${y(valor)}`).join(" ");
   const area = `${x(0)},${alto} ${linea} ${x(serie.length - 1)},${alto}`;
-  const baseY = y(PUNTOS_INICIAL);
+  const baseY = y(NIVEL_PROMEDIO);
   const finY = y(serie[serie.length - 1]);
 
   return (

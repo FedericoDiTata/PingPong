@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { Avatar } from "./Avatar";
 import { ConfirmarEnLinea } from "./ui";
 import { IconoBasura } from "./Iconos";
-import { conSigno, relativo } from "@/lib/format";
+import { relativo } from "@/lib/format";
 import type { Liga, ResultadoPartido } from "@/lib/liga";
 import { escalonar, resorte } from "@/lib/motion";
 
@@ -32,9 +32,6 @@ export function TarjetaPartido({
 
   const mirandoAlGanador = destacarA === ganador.id;
   const mirandoAlPerdedor = destacarA === perdedor.id;
-
-  const deltaGanador =
-    resultado.ganadorId === resultado.partido.jugadorA ? resultado.delta.a : resultado.delta.b;
 
   return (
     <motion.article
@@ -95,7 +92,7 @@ export function TarjetaPartido({
               mirandoAlGanador ? "bg-naranja text-tinta" : "bg-azul-800 text-crema"
             }`}
           >
-            {mirandoAlGanador ? `ganó ${conSigno(deltaGanador)}` : "perdió"}
+            {mirandoAlGanador ? "ganó" : "perdió"}
           </span>
         ) : null}
 
