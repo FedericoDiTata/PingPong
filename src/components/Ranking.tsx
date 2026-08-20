@@ -134,17 +134,26 @@ function Fila({ fila, indice }: { fila: FilaTabla; indice: number }) {
               {fila.pg}
               <span className="text-tinta/35">G</span> · {fila.pp}
               <span className="text-tinta/35">P</span>
-              <span className="ml-2 text-tinta/45">{porcentaje(fila.efectividad)}</span>
+              <span className="ml-2 text-tinta/45 md:hidden">{porcentaje(fila.efectividad)}</span>
             </span>
           </div>
 
-          <div className="flex shrink-0 flex-col items-end">
-            <NumeroRodante
-              valor={fila.nivel}
-              decimales={1}
-              className="display text-2xl text-tinta md:text-3xl"
-            />
-            <span className="rotulo text-tinta/40">nivel</span>
+          <div className="flex shrink-0 items-end gap-3 md:gap-6">
+            <div className="hidden flex-col items-end md:flex">
+              <span className="display text-2xl leading-none text-tinta/65">
+                {porcentaje(fila.efectividad)}
+              </span>
+              <span className="rotulo mt-1 text-tinta/40">efectividad</span>
+            </div>
+
+            <div className="flex flex-col items-end">
+              <NumeroRodante
+                valor={fila.nivel}
+                decimales={1}
+                className="display text-2xl leading-none text-tinta md:text-3xl"
+              />
+              <span className="rotulo mt-1 text-tinta/40">nivel</span>
+            </div>
           </div>
         </motion.div>
       </Link>
